@@ -5,15 +5,23 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-function normalizeRequestType(value: string) {
-  const allowed = ["FEATURE", "BUG", "CHANGE", "IMPROVEMENT", "NEW_PRODUCT"];
+const REQUEST_TYPES = [
+  "FEATURE",
+  "BUG",
+  "CHANGE",
+  "IMPROVEMENT",
+  "NEW_PRODUCT",
+] as const;
 
+type RequestTypeValue = (typeof REQUEST_TYPES)[number];
+
+function normalizeRequestType(value: string): RequestTypeValue {
   if (value === "OTHER") {
     return "CHANGE";
   }
 
-  if (allowed.includes(value)) {
-    return value;
+  if (REQUEST_TYPES.includes(value as RequestTypeValue)) {
+    return value as RequestTypeValue;
   }
 
   return "FEATURE";
@@ -29,6 +37,10 @@ function normalizePriority(value: string) {
   return "MEDIUM";
 }
 
+function sanitizeText(value: string) {
+  return value.replace(/\u0000/g, "").trim();
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({
@@ -41,11 +53,15 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    const projectId = String(body.projectId ?? "").trim();
-    const title = String(body.title ?? "").trim();
-    const type = normalizeRequestType(String(body.type ?? "FEATURE").trim());
-    const priority = normalizePriority(String(body.priority ?? "MEDIUM").trim());
-    const rawDescription = String(body.rawDescription ?? "").trim();
+    const projectId = sanitizeText(String(body.projectId ?? ""));
+    const title = sanitizeText(String(body.title ?? ""));
+    const type = normalizeRequestType(
+      sanitizeText(String(body.type ?? "FEATURE")),
+    );
+    const priority = normalizePriority(
+      sanitizeText(String(body.priority ?? "MEDIUM")),
+    );
+    const rawDescription = sanitizeText(String(body.rawDescription ?? ""));
 
     if (!projectId) {
       return NextResponse.json(
@@ -99,14 +115,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const clientId = session.user.id;
+
     const ticket = await db.featureRequest.create({
       data: {
         projectId,
-        clientId: session.user.id,
+        clientId,
         title,
         type: type as any,
-        priority: priority as any,
-        status: "SUBMITTED" as any,
+        status: "SUBMITTED",
         rawDescription,
       },
     });
@@ -121,7 +138,7 @@ export async function POST(request: NextRequest) {
           entityId: ticket.id,
           metadata: JSON.stringify({
             projectId,
-            projectName: access.project.name,
+            projectName: sanitizeText(access.project.name),
             title,
             type,
             priority,
@@ -134,10 +151,10 @@ export async function POST(request: NextRequest) {
       ok: true,
       ticketId: ticket.id,
     });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unable to create request.";
-
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    return NextResponse.json(
+      { error: "Unable to create request." },
+      { status: 500 },
+    );
   }
 }

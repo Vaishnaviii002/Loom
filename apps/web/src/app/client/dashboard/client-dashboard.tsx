@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { LoomLogo } from "@/components/brand/loom-logo";
 import type { ReactNode } from "react";
 
@@ -38,6 +38,15 @@ type RequestItem = {
   createdAt: string;
 };
 
+type ClientPrd = {
+  id: string;
+  requestId: string;
+  title: string;
+  status: string;
+  content: string;
+  createdAt: string;
+};
+
 type ActiveView = "dashboard" | "new-request" | "prds" | "progress";
 
 type AiDraft = {
@@ -53,7 +62,30 @@ type AiDraft = {
   repoUnderstanding: string;
   changeImpact: string;
   affectedAreas: string[];
+
+  shouldProceed?: boolean;
+  needsMoreContext?: boolean;
+  alreadyExists?: boolean;
+  businessProblem?: string;
+  whoWillUseIt?: string;
+  whoShouldResolve?: string;
+  existingFunctionalityCheck?: string;
+  requiredFiles?: string[];
+  additionalInformationNeeded?: string[];
+  prdReadiness?: string;
+  clientEducation?: string;
 };
+
+const ADDITIONAL_INFO_MARKER = "\n\nAdditional information:\n";
+
+function getRequestDetails(rawDescription: string) {
+  return rawDescription.split(ADDITIONAL_INFO_MARKER)[0] || rawDescription;
+}
+
+function getAdditionalInfo(rawDescription: string) {
+  const parts = rawDescription.split(ADDITIONAL_INFO_MARKER);
+  return parts[1] || "";
+}
 
 export default function ClientDashboard({
   mode,
@@ -69,26 +101,23 @@ export default function ClientDashboard({
 }) {
   const [activeView, setActiveView] = useState<ActiveView>("dashboard");
   const [requestItems, setRequestItems] = useState<RequestItem[]>(requests);
-
-  const stats = useMemo(() => {
-    const total = requestItems.length;
-
-    const active = requestItems.filter(
-      (request) =>
-        !["SHIPPED", "COMPLETED", "CLOSED", "REJECTED"].includes(
-          request.status,
-        ),
-    ).length;
-
-    const shipped = requestItems.filter((request) =>
-      ["SHIPPED", "COMPLETED"].includes(request.status),
-    ).length;
-
-    return { total, active, shipped };
-  }, [requestItems]);
+  const [clientPrds, setClientPrds] = useState<ClientPrd[]>([]);
 
   function handleRequestCreated(request: RequestItem) {
     setRequestItems((current) => [request, ...current]);
+  }
+
+  function handleRequestUpdated(updatedRequest: RequestItem) {
+    setRequestItems((current) =>
+      current.map((request) =>
+        request.id === updatedRequest.id ? updatedRequest : request,
+      ),
+    );
+  }
+
+  function handlePrdGenerated(prd: ClientPrd) {
+    setClientPrds((current) => [prd, ...current]);
+    setActiveView("prds");
   }
 
   return (
@@ -171,9 +200,10 @@ export default function ClientDashboard({
             {activeView === "dashboard" && (
               <DashboardView
                 project={project}
-                stats={stats}
                 requests={requestItems}
                 onNewRequest={() => setActiveView("new-request")}
+                onPrdGenerated={handlePrdGenerated}
+                onRequestUpdated={handleRequestUpdated}
               />
             )}
 
@@ -185,7 +215,7 @@ export default function ClientDashboard({
               />
             )}
 
-            {activeView === "prds" && <PrdView requests={requestItems} />}
+            {activeView === "prds" && <PrdView prds={clientPrds} />}
 
             {activeView === "progress" && (
               <ProgressView requests={requestItems} />
@@ -199,20 +229,134 @@ export default function ClientDashboard({
 
 function DashboardView({
   project,
-  stats,
   requests,
   onNewRequest,
+  onPrdGenerated,
+  onRequestUpdated,
 }: {
   project: Project;
-  stats: { total: number; active: number; shipped: number };
   requests: RequestItem[];
   onNewRequest: () => void;
+  onPrdGenerated: (prd: ClientPrd) => void;
+  onRequestUpdated: (request: RequestItem) => void;
 }) {
   const [selectedRequest, setSelectedRequest] = useState<RequestItem | null>(
     null,
   );
+  const [showAiDetails, setShowAiDetails] = useState(false);
+  const [extraPrdDetails, setExtraPrdDetails] = useState("");
+  const [detailInput, setDetailInput] = useState("");
 
   const recentRequests = requests.slice(0, 5);
+
+  function closeRequestModal() {
+    setSelectedRequest(null);
+    setShowAiDetails(false);
+    setDetailInput("");
+    setExtraPrdDetails("");
+  }
+
+  async function sendAdditionalDetail() {
+    if (!selectedRequest) {
+      return;
+    }
+
+    const message = detailInput.trim();
+
+    if (!message) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/client/requests/additional-info", {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          requestId: selectedRequest.id,
+          additionalInfo: message,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return;
+      }
+
+      const updatedRequest = {
+        ...selectedRequest,
+        rawDescription: data.rawDescription,
+      };
+
+      setSelectedRequest(updatedRequest);
+      onRequestUpdated(updatedRequest);
+      setDetailInput("");
+    } catch {
+      return;
+    }
+  }
+
+  function generatePrdFromRequest(request: RequestItem) {
+    const prdContent = [
+      `Problem statement`,
+      request.rawDescription ||
+        "The client request needs to be reviewed and converted into a clear product requirement.",
+
+      `Goals`,
+      `- Understand the requested change clearly.
+- Convert the client request into an implementation-ready requirement.
+- Make sure the final change can be reviewed and approved by the client.`,
+
+      `Non-goals`,
+      `- Do not expose source code, internal engineering tasks, pull requests, or AI review details to the client.
+- Do not approve engineering work automatically.
+- Do not mark the request as shipped from this PRD step.`,
+
+      `User stories`,
+      `- As a client, I want this request to be clearly understood so the product team can review it.
+- As a product manager, I want the request converted into a structured PRD before engineering starts.
+- As a reviewer, I want acceptance criteria so the final implementation can be verified.`,
+
+      `Acceptance criteria`,
+      `- The request is clearly scoped.
+- The expected outcome is understandable.
+- The affected product area is identified.
+- The product team can approve or refine the PRD.
+- The client can verify the completed result without seeing internal code or reviews.`,
+
+      `Edge cases`,
+      `- The request may need more client clarification.
+- The requested change may already exist in the product.
+- The request may affect multiple pages or user flows.
+- The request may need design/business approval before engineering.`,
+
+      `Success metrics`,
+      `- PRD is reviewed and approved by the product team.
+- Engineering can break the PRD into clear tasks.
+- Client can understand what will be delivered.
+- Final implementation can be validated against acceptance criteria.`,
+
+      extraPrdDetails.trim()
+        ? `Additional client details\n${extraPrdDetails.trim()}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    onPrdGenerated({
+      id: crypto.randomUUID(),
+      requestId: request.id,
+      title: request.title,
+      status: "GENERATED",
+      content: prdContent,
+      createdAt: new Date().toISOString(),
+    });
+
+    closeRequestModal();
+  }
 
   return (
     <div className="space-y-8">
@@ -258,12 +402,6 @@ function DashboardView({
         </div>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatCard label="Total requests" value={stats.total.toString()} />
-        <StatCard label="Active requests" value={stats.active.toString()} />
-        <StatCard label="Shipped" value={stats.shipped.toString()} />
-      </div>
-
       <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#171717]">
         <div className="flex items-center justify-between gap-4 border-b border-white/10 px-7 py-6">
           <div>
@@ -290,20 +428,22 @@ function DashboardView({
             No requests raised yet. Create the first request for this project.
           </div>
         ) : (
-          <div className="space-y-3 p-5">
+          <div className="divide-y divide-white/10">
             {recentRequests.map((request) => (
               <div
                 key={request.id}
-                className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-[#101010] px-5 py-4"
+                className="flex items-start justify-between gap-6 px-7 py-5"
               >
-                <div>
-                  <p className="text-base font-semibold text-white">
-                    {request.title}
-                  </p>
+                <div className="space-y-3">
+                  <div className="flex gap-3">
+                    <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[#aa4825]" />
 
-                  <p className="mt-1 text-xs text-white/40">
-                    {request.type} · {request.status} · {request.priority}
-                  </p>
+                    <div>
+                      <p className="text-base font-semibold text-white">
+                        {request.title}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <button
@@ -320,40 +460,148 @@ function DashboardView({
       </section>
 
       {selectedRequest && (
-        <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#171717]">
-          <div className="flex items-start justify-between gap-4 border-b border-white/10 px-7 py-6">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
-                Request detail
-              </p>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-6 py-8 backdrop-blur-sm">
+          <div className="max-h-[88vh] w-full max-w-5xl overflow-hidden rounded-3xl border border-white/10 bg-[#171717]/95 shadow-2xl">
+            <div className="flex items-start justify-between gap-5 border-b border-white/10 px-8 py-6">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
+                  Request detail
+                </p>
 
-              <h3 className="mt-3 text-2xl font-semibold text-white">
-                {selectedRequest.title}
-              </h3>
+                <h3 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+                  {selectedRequest.title}
+                </h3>
+
+                <p className="mt-2 text-sm text-white/40">
+                  Full client request information created from AI Discovery.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeRequestModal}
+                className="rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-white/60 transition hover:border-[#aa4825]/50 hover:text-white"
+              >
+                Close
+              </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setSelectedRequest(null)}
-              className="rounded-xl border border-white/10 px-4 py-2 text-sm text-white/60 transition hover:text-white"
-            >
-              Close
-            </button>
-          </div>
+            <div className="max-h-[calc(88vh-120px)] overflow-y-auto px-8 py-7">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-white/10 bg-[#101010] p-5">
+                  <p className="text-xs uppercase tracking-[0.18em] text-white/35">
+                    Type
+                  </p>
+                  <p className="mt-3 text-base font-semibold text-white">
+                    {selectedRequest.type}
+                  </p>
+                </div>
 
-          <div className="divide-y divide-white/10">
-            <InfoRow title="Type" value={selectedRequest.type} />
-            <InfoRow title="Status" value={selectedRequest.status} />
-            <InfoRow title="Priority" value={selectedRequest.priority} />
-            <InfoRow
-              title="Details"
-              value={
-                selectedRequest.rawDescription ||
-                "No request details were saved."
-              }
-            />
+                <div className="rounded-2xl border border-white/10 bg-[#101010] p-5">
+                  <p className="text-xs uppercase tracking-[0.18em] text-white/35">
+                    Status
+                  </p>
+                  <p className="mt-3 text-base font-semibold text-white">
+                    {selectedRequest.status}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-[#101010] p-5">
+                  <p className="text-xs uppercase tracking-[0.18em] text-white/35">
+                    Priority
+                  </p>
+                  <p className="mt-3 text-base font-semibold text-white">
+                    {selectedRequest.priority}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-white/10 bg-[#101010] p-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
+                  Full request details
+                </p>
+
+                <p className="mt-5 whitespace-pre-wrap text-sm leading-7 text-white/55">
+                  {getRequestDetails(selectedRequest.rawDescription) ||
+                    "No request details were saved."}
+                </p>
+              </div>
+
+              {getAdditionalInfo(selectedRequest.rawDescription) && (
+                <div className="mt-6">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
+                    Additional information
+                  </p>
+
+                  <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-white/55">
+                    {getAdditionalInfo(selectedRequest.rawDescription)}
+                  </p>
+                </div>
+              )}
+
+              {showAiDetails && (
+                <div className="mt-6">
+                  <p className="text-sm font-semibold text-white">
+                    Add more details
+                  </p>
+
+                  <p className="mt-2 text-sm leading-6 text-white/40">
+                    Add anything missed during ticket creation. These details
+                    will stay with this request and can be used while generating
+                    the PRD.
+                  </p>
+
+                  <textarea
+                    value={detailInput}
+                    onChange={(event) => setDetailInput(event.target.value)}
+                    rows={5}
+                    placeholder="Example: Add the picture only to the landing page hero section and keep it responsive."
+                    className="mt-4 w-full resize-none rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/25 focus:border-[#aa4825]"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={sendAdditionalDetail}
+                    disabled={!detailInput.trim()}
+                    className="mt-4 h-12 w-full rounded-xl bg-white/10 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Send
+                  </button>
+                </div>
+              )}
+
+              {extraPrdDetails && (
+                <div className="mt-6 ">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
+                    Additional client details
+                  </p>
+
+                  <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-white/55">
+                    {extraPrdDetails}
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-6 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setShowAiDetails((value) => !value)}
+                  className="h-12 flex-1 rounded-xl border border-white/10 text-sm font-semibold text-white/70 transition hover:border-[#aa4825]/50 hover:text-white"
+                >
+                  {showAiDetails ? "Hide details" : "Add more details"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => generatePrdFromRequest(selectedRequest)}
+                  className="h-12 flex-1 rounded-xl bg-[#aa4825] text-sm font-semibold text-white transition hover:bg-[#8f3b1f]"
+                >
+                  Generate PRD
+                </button>
+              </div>
+            </div>
           </div>
-        </section>
+        </div>
       )}
     </div>
   );
@@ -376,6 +624,7 @@ function NewRequestView({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function generateRequest() {
     setError("");
@@ -440,6 +689,48 @@ function NewRequestView({
         .filter(Boolean)
         .join("\n\n");
 
+      setSuccess("Request draft generated. Review it and submit when ready.");
+    } catch {
+      setError("Unable to generate request.");
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
+  async function submitRequest() {
+    setError("");
+    setSuccess("");
+
+    if (!draft) {
+      setError("Generate the request first before submitting.");
+      return;
+    }
+
+    const safeType = draft.type === "OTHER" ? "CHANGE" : draft.type;
+
+    const rawDescription = [
+      `Client selected type:\n${requestType}`,
+      `Problem:\n${draft.problem}`,
+      `Expected outcome:\n${draft.expectedOutcome}`,
+      `Repository understanding:\n${draft.repositoryContext}`,
+      `Change impact:\n${draft.changeImpact}`,
+      `Likely affected areas:\n${draft.affectedAreas
+        .map((item) => `- ${item}`)
+        .join("\n")}`,
+      `Acceptance criteria:\n${draft.acceptanceCriteria
+        .map((item) => `- ${item}`)
+        .join("\n")}`,
+      additionalDetails.trim()
+        ? `Additional client details:\n${additionalDetails.trim()}`
+        : "",
+      `Original client message:\n${requestText}`,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    setIsSubmitting(true);
+
+    try {
       const requestResponse = await fetch("/api/client/requests", {
         method: "POST",
         credentials: "include",
@@ -448,9 +739,9 @@ function NewRequestView({
         },
         body: JSON.stringify({
           projectId: project.id,
-          title: generatedDraft.title,
+          title: draft.title,
           type: safeType,
-          priority: generatedDraft.priority,
+          priority: draft.priority,
           rawDescription,
         }),
       });
@@ -464,19 +755,20 @@ function NewRequestView({
 
       onRequestCreated({
         id: String(requestData?.ticketId ?? crypto.randomUUID()),
-        title: generatedDraft.title,
+        title: draft.title,
         type: safeType,
         status: "SUBMITTED",
-        priority: generatedDraft.priority,
+        priority: draft.priority,
         rawDescription,
         createdAt: new Date().toISOString(),
       });
 
-      setSuccess("Request generated and added to Recent requests.");
+      setSuccess("Request submitted successfully.");
+      onViewDashboard();
     } catch {
-      setError("Unable to generate request.");
+      setError("Unable to submit request.");
     } finally {
-      setIsGenerating(false);
+      setIsSubmitting(false);
     }
   }
 
@@ -667,6 +959,23 @@ function NewRequestView({
                   emptyText="No acceptance criteria generated."
                 />
               </TicketSection>
+
+              <div className="border-t border-white/10 pt-6">
+                <button
+                  type="button"
+                  onClick={submitRequest}
+                  disabled={!draft || isSubmitting}
+                  className="h-12 w-full rounded-xl bg-[#aa4825] text-sm font-semibold text-white transition hover:bg-[#8f3b1f] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSubmitting ? "Submitting request..." : "Submit request"}
+                </button>
+
+                {!success && (
+                  <p className="mt-3 text-center text-xs text-white/35">
+                    Generate the request first before submitting.
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -727,24 +1036,51 @@ function BulletList({
   );
 }
 
-function PrdView({ requests }: { requests: RequestItem[] }) {
+function PrdView({ prds }: { prds: ClientPrd[] }) {
   return (
     <section className="rounded-2xl border border-white/10 bg-[#171717] p-6">
       <h2 className="text-xl font-semibold">Client-facing PRD</h2>
 
       <p className="mt-2 text-sm leading-6 text-white/45">
-        Requirement drafts and PRD approval versions shared with the client will
-        appear here. Internal engineering tasks, pull requests, code reviews,
-        and implementation details stay hidden.
+        Final PRDs generated from client requests will appear here. Internal
+        engineering tasks, pull requests, code reviews, and implementation
+        details stay hidden.
       </p>
 
       <div className="mt-6">
-        {requests.length === 0 ? (
+        {prds.length === 0 ? (
           <EmptyState text="No PRD drafts are available yet." />
         ) : (
-          <div className="space-y-4">
-            {requests.map((request) => (
-              <RequestCard key={request.id} request={request} />
+          <div className="space-y-5">
+            {prds.map((prd) => (
+              <section
+                key={prd.id}
+                className="rounded-2xl border border-white/10 bg-[#101010] p-6"
+              >
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
+                      Final PRD
+                    </p>
+
+                    <h3 className="mt-3 text-2xl font-semibold text-white">
+                      {prd.title}
+                    </h3>
+
+                    <p className="mt-2 text-sm text-white/35">
+                      Status: {prd.status}
+                    </p>
+                  </div>
+
+                  <Badge label={prd.status} />
+                </div>
+
+                <div className="mt-6 rounded-2xl border border-white/10 bg-[#171717] p-5">
+                  <p className="whitespace-pre-wrap text-sm leading-7 text-white/55">
+                    {prd.content}
+                  </p>
+                </div>
+              </section>
             ))}
           </div>
         )}
