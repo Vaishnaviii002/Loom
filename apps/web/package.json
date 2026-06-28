@@ -1,0 +1,44 @@
+{
+  "name": "@shipflow/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "latest",
+    "@shipflow/ai": "workspace:*",
+    "@shipflow/db": "workspace:*",
+    "@shipflow/inngest": "workspace:*",
+    "@shipflow/trpc": "workspace:*",
+    "@tailwindcss/postcss": "latest",
+    "@shipflow/github": "workspace:*",
+    "@tanstack/react-query": "latest",
+    "@trpc/client": "latest",
+    "@trpc/react-query": "^11.18.0",
+    "@trpc/server": "latest",
+    "ai": "latest",
+    "better-auth": "latest",
+    "inngest": "latest",
+    "lucide-react": "^1.21.0",
+    "next": "16.2.9",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "superjson": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.9",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

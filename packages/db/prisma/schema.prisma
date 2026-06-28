@@ -1,0 +1,555 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  PM
+  SENIOR_ENG
+  DEVELOPER
+  CLIENT
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum SubStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+}
+
+enum ProjectType {
+  EXISTING
+  NEW
+}
+
+enum RequestType {
+  BUG
+  CRITICAL_BUG
+  FEATURE
+  IMPROVEMENT
+  NEW_PRODUCT
+  OTHER
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  TODO
+  ASSIGNED
+  IN_PROGRESS
+  DONE
+  BLOCKED
+}
+
+enum FeatureStatus {
+  SUBMITTED
+  DISCOVERY
+  PRD_DRAFT
+  PRD_APPROVED
+  PLANNING
+  IN_DEV
+  IN_REVIEW
+  FIX_NEEDED
+  PENDING_APPROVAL
+  SHIPPED
+  REJECTED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+enum AssigneeType {
+  HUMAN
+  AI_AGENT
+}
+
+enum PRStatus {
+  OPEN
+  IN_REVIEW
+  NEEDS_FIX
+  APPROVED
+  MERGED
+  CLOSED
+}
+
+enum ReviewStatus {
+  RUNNING
+  COMPLETE
+  FAILED
+}
+
+enum Severity {
+  S1
+  S2
+  S3
+  S4
+  S5
+}
+
+enum FindingCategory {
+  SECURITY
+  CORRECTNESS
+  PERFORMANCE
+  REQUIREMENT
+  EDGE_CASE
+  CODE_QUALITY
+}
+
+enum FindingStatus {
+  OPEN
+  OVERRIDE_PENDING
+  CLEARED
+  ESCALATED
+  REJECTED
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions              Session[]
+  accounts              Account[]
+  memberships           Membership[]
+  sentInvites           Invite[]              @relation("InviteSender")
+  assignedTasks         Task[]                @relation("TaskAssignee")
+  clientProjectAccesses ClientProjectAccess[] @relation("ClientProjectAccessUser")
+  featureRequests       FeatureRequest[]      @relation("FeatureRequestClient")
+  projectMemberships    ClientProjectMember[]
+  justifications        Justification[]
+  auditLogs             AuditLog[]            @relation("AuditActor")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@index([identifier])
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  plan      Plan     @default(FREE)
+  credits   Int      @default(10)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships  Membership[]
+  projects     Project[]
+  invites      Invite[]
+  subscription Subscription?
+  auditLogs    AuditLog[]
+}
+
+model Membership {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        Role
+  createdAt   DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+model Invite {
+  id          String       @id @default(cuid())
+  workspaceId String
+  projectId   String?
+  email       String
+  role        Role
+  token       String       @unique
+  status      InviteStatus @default(PENDING)
+  invitedById String?
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime     @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invitedBy User?     @relation("InviteSender", fields: [invitedById], references: [id])
+
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([email])
+}
+
+model Project {
+  id          String @id @default(cuid())
+  workspaceId String
+
+  name             String
+  description      String @default("")
+  type             String @default("EXISTING")
+  techStack        String @default("")
+  existingFeatures String @default("")
+  businessGoals    String @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  gitHubRepo      GitHubRepo?
+  featureRequests FeatureRequest[]
+  invites         Invite[]
+  clientAccesses  ClientProjectAccess[]
+  projectMembers  ClientProjectMember[]
+
+  @@index([workspaceId])
+}
+
+model ClientProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+}
+
+model ClientProjectAccess {
+  id        String @id @default(cuid())
+  clientId  String
+  projectId String
+
+  client  User    @relation("ClientProjectAccessUser", fields: [clientId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, projectId])
+  @@index([clientId])
+  @@index([projectId])
+}
+
+model FeatureRequest {
+  id             String        @id @default(cuid())
+  projectId      String
+  clientId       String
+  type           RequestType
+  title          String
+  rawDescription String
+  status         FeatureStatus @default(SUBMITTED)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  project              Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client               User                  @relation("FeatureRequestClient", fields: [clientId], references: [id], onDelete: Cascade)
+  conversationMessages ConversationMessage[]
+  prd                  Prd?
+
+  @@index([projectId])
+  @@index([clientId])
+  @@index([status])
+}
+
+model ConversationMessage {
+  id               String      @id @default(cuid())
+  featureRequestId String
+  role             MessageRole
+  content          String
+  createdAt        DateTime    @default(now())
+
+  featureRequest FeatureRequest @relation(fields: [featureRequestId], references: [id], onDelete: Cascade)
+
+  @@index([featureRequestId])
+}
+
+model Prd {
+  id               String    @id @default(cuid())
+  featureRequestId String    @unique
+  version          Int       @default(1)
+  problemStatement String
+  goals            String
+  nonGoals         String
+  userStories      String
+  edgeCases        String
+  successMetrics   String
+  approvedByPmId   String?
+  approvedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  featureRequest     FeatureRequest       @relation(fields: [featureRequestId], references: [id], onDelete: Cascade)
+  acceptanceCriteria AcceptanceCriterion[]
+  tasks              Task[]
+}
+
+model AcceptanceCriterion {
+  id          String   @id @default(cuid())
+  prdId       String
+  title       String
+  description String
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  prd      Prd       @relation(fields: [prdId], references: [id], onDelete: Cascade)
+  findings Finding[]
+
+  @@index([prdId])
+}
+
+model Task {
+  id           String  @id @default(cuid())
+  prdId        String
+  assignedToId String?
+
+  title       String
+  description String
+  priority    TaskPriority @default(MEDIUM)
+  status      TaskStatus   @default(TODO)
+  order       Int          @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  prd        Prd   @relation(fields: [prdId], references: [id], onDelete: Cascade)
+  assignedTo User? @relation("TaskAssignee", fields: [assignedToId], references: [id])
+
+  pullRequests PullRequest[]
+
+  @@index([prdId])
+  @@index([assignedToId])
+}
+
+model GitHubRepo {
+  id        String @id @default(cuid())
+  projectId String @unique
+
+  repoFullName   String
+  owner          String?
+  name           String?
+  defaultBranch  String?
+  installationId String?
+
+  connectedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  pullRequests PullRequest[]
+
+  @@index([repoFullName])
+}
+
+model PullRequest {
+  id     String  @id @default(cuid())
+  repoId String
+  taskId String?
+
+  prNumber Int
+  title    String
+  state    String
+  url      String
+
+  branch     String?
+  baseBranch String?
+  author     String?
+
+  changedFiles Int @default(0)
+  additions    Int @default(0)
+  deletions    Int @default(0)
+
+  lastSyncedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  repo GitHubRepo @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  task Task?      @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  reviewSnapshots ReviewSnapshot[]
+
+  @@unique([repoId, prNumber])
+  @@index([taskId])
+}
+
+model ReviewSnapshot {
+  id            String @id @default(cuid())
+  pullRequestId String
+
+  summary  String?
+  status   String  @default("PENDING")
+  rawDiff  String?
+  aiResult String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pullRequest PullRequest @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
+
+  reviewRuns ReviewRun[]
+
+  @@index([pullRequestId])
+}
+
+model ReviewRun {
+  id         String @id @default(cuid())
+  snapshotId String
+
+  status      String    @default("PENDING")
+  summary     String?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  snapshot ReviewSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  findings Finding[]
+
+  @@index([snapshotId])
+}
+
+model Finding {
+  id          String @id @default(cuid())
+  reviewRunId String
+
+  acceptanceCriterionId String?
+
+  type        String
+  severity    String
+  title       String
+  description String
+  filePath    String?
+  lineNumber  Int?
+  suggestion  String?
+  isResolved  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reviewRun           ReviewRun            @relation(fields: [reviewRunId], references: [id], onDelete: Cascade)
+  acceptanceCriterion AcceptanceCriterion? @relation(fields: [acceptanceCriterionId], references: [id], onDelete: SetNull)
+
+  justifications Justification[]
+
+  @@index([reviewRunId])
+  @@index([acceptanceCriterionId])
+  @@index([severity])
+}
+
+model Justification {
+  id                 String   @id @default(cuid())
+  findingId          String
+  authorId           String
+  reason             String
+  aiValidationResult String?
+  validatedAt        DateTime?
+  createdAt          DateTime @default(now())
+
+  finding Finding @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([findingId])
+  @@index([authorId])
+}
+
+model Subscription {
+  id                     String    @id @default(cuid())
+  workspaceId            String    @unique
+  razorpaySubscriptionId String?
+  plan                   Plan
+  creditsRemaining       Int
+  repoLimit              Int
+  status                 SubStatus
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  workspaceId String
+  actorId     String?
+  action      String
+  entityType  String
+  entityId    String
+  metadata    String?
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actor     User?     @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([workspaceId])
+  @@index([actorId])
+  @@index([entityType, entityId])
+}

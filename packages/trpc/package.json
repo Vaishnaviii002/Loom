@@ -1,0 +1,21 @@
+{
+  "name": "@shipflow/trpc",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "dependencies": {
+    "@shipflow/db": "workspace:*",
+    "@shipflow/github": "workspace:*",
+    "@shipflow/inngest": "workspace:*",
+    "@trpc/server": "latest",
+    "superjson": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "typescript": "latest"
+  }
+}

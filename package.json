@@ -1,0 +1,24 @@
+{
+  "name": "shipflow",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json,css}\"",
+    "db:generate": "pnpm --filter @shipflow/db db:generate",
+    "db:push": "pnpm --filter @shipflow/db db:push",
+    "db:migrate": "pnpm --filter @shipflow/db db:migrate",
+    "db:studio": "pnpm --filter @shipflow/db db:studio"
+  },
+ 
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "prettier": "latest",
+    "turbo": "latest",
+    "typescript": "latest"
+  }
+}
