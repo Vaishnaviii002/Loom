@@ -284,12 +284,12 @@ export default async function NewProjectPage() {
           New project
         </h1>
 
-        <p className="mt-2 text-sm text-white/45">
+        <p className="mt-6 text-sm text-white/45">
           Enter a GitHub repository. Loom will fetch the repository
           description and tech stack automatically when the project is created.
         </p>
 
-        <form action={createProject} className="mt-8">
+        <form action={createProject} className="mt-35">
           <section className="rounded-2xl border border-white/10 bg-[#171717] p-6 md:p-8">
             <div className="space-y-6">
               <Field
@@ -299,38 +299,7 @@ export default async function NewProjectPage() {
                 required
               />
 
-              <Field
-                label="Project name"
-                name="name"
-                placeholder="Optional. If empty, fetched from GitHub repo name."
-              />
-
-              <TextAreaField
-                label="Description"
-                name="description"
-                placeholder="Optional. If empty, fetched from GitHub repository description."
-                rows={4}
-              />
-
-              <Field
-                label="Tech stack"
-                name="techStack"
-                placeholder="Optional. If empty, detected from repo languages and package.json."
-              />
-
-              <TextAreaField
-                label="Existing features"
-                name="existingFeatures"
-                placeholder="Optional: Authentication, dashboard, requests, GitHub integration..."
-                rows={5}
-              />
-
-              <TextAreaField
-                label="Business goals"
-                name="businessGoals"
-                placeholder="Optional: Reduce delays, improve delivery, track lifecycle..."
-                rows={5}
-              />
+            
             </div>
 
             <div className="mt-8 flex items-center justify-end gap-3">
