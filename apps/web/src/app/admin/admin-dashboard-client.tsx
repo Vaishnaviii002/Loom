@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { LoomLogo } from "@/components/brand/loom-logo";
 
 type AdminUser = {
   name: string;
@@ -137,14 +138,10 @@ export default function AdminDashboardClient({
       <div className="grid min-h-screen lg:grid-cols-[20%_80%]">
         <aside className="flex min-h-screen flex-col border-r border-white/10 bg-[#0f0f0f]">
           <div className="border-b border-white/10 px-5 py-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#aa4825] text-sm font-black text-white shadow-[0_0_30px_rgba(170,72,37,0.3)]">
-                S
-              </div>
-
+            <div className="flex items-center gap-8">
               <div>
-                <p className="text-sm font-semibold">ShipFlow AI</p>
-                <p className="text-xs text-white/40">Admin Portal</p>
+                <LoomLogo size="small" />
+                <p className="mt-10 text-s text-white/40">Admin Portal</p>
               </div>
             </div>
           </div>
@@ -624,7 +621,7 @@ function Billing() {
       <PlanCard
         name="Free"
         price="$0"
-        description="For trying ShipFlow AI with one small team workflow."
+        description="For trying Loom with one small team workflow."
         features={[
           "1 workspace",
           "1 project",

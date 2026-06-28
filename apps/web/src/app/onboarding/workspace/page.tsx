@@ -40,7 +40,7 @@ export default function WorkspaceOnboardingPage() {
     <main className="flex min-h-screen items-center justify-center bg-[#111111] px-6 py-10 text-white">
       <section className="w-full max-w-[460px] rounded-[24px] border border-white/10 bg-[#171717] p-8 shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
         <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#aa4825]">
-          ShipFlow AI
+          Loom
         </p>
 
         <h1 className="mt-5 text-3xl font-semibold tracking-tight text-white">

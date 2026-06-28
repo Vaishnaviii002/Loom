@@ -99,7 +99,7 @@ export default function NewProjectForm({
         </h1>
 
         <p className="mt-2 text-sm text-white/45">
-          Connect a GitHub repository and ShipFlow AI will automatically fetch
+          Connect a GitHub repository and Loom will automatically fetch
           the project description and tech stack.
         </p>
 

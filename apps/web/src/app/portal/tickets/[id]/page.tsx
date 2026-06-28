@@ -166,7 +166,7 @@ export default async function ClientTicketDetailPage({
                     }`}
                   >
                     <p className="text-xs uppercase tracking-wide text-slate-500">
-                      {message.role === "USER" ? "Client" : "ShipFlow AI"}
+                      {message.role === "USER" ? "Client" : "Loom"}
                     </p>
 
                     <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-300">
@@ -220,7 +220,7 @@ export default async function ClientTicketDetailPage({
             <h3 className="text-xl font-semibold">What happens next?</h3>
 
             <p className="mt-4 text-sm leading-6 text-slate-400">
-              ShipFlow AI will clarify the requirement, then the Product Manager
+              Loom will clarify the requirement, then the Product Manager
               will review it and generate a PRD. After approval, the engineering
               team will plan tasks, implement through GitHub PRs, run AI review,
               fix issues, and wait for final human approval.

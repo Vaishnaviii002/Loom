@@ -45,7 +45,7 @@ export default function SignInPage() {
     <main className="flex min-h-screen items-center justify-center bg-[#111111] px-6 text-white">
       <section className="w-full max-w-[460px] rounded-[26px] border border-white/10 bg-[#171717] p-9 shadow-[0_26px_80px_rgba(0,0,0,0.44)]">
         <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#aa4825]">
-          ShipFlow AI
+          Loom
         </p>
 
         <h1 className="mt-5 text-[34px] font-semibold tracking-tight text-white">
@@ -53,7 +53,7 @@ export default function SignInPage() {
         </h1>
 
         <p className="mt-3 text-sm leading-6 text-white/55">
-          Sign in with your ShipFlow AI account.
+          Sign in with your Loom account.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-9 space-y-6">
@@ -103,7 +103,7 @@ export default function SignInPage() {
         </form>
 
         <div className="mt-7 text-center text-sm text-white/50">
-          New to ShipFlow AI?{" "}
+          New to Loom?{" "}
           <Link
             href="/auth/sign-up"
             className="text-white/70 transition hover:text-[#aa4825]"

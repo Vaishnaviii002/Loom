@@ -3,7 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { db } from "@shipflow/db";
 
 export const auth = betterAuth({
-  appName: "ShipFlow AI",
+  appName: "Loom",
 
   database: prismaAdapter(db, {
     provider: "postgresql",

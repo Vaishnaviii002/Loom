@@ -148,7 +148,7 @@ export default async function PMRequestDetailPage({
                   }`}
                 >
                   <p className="text-xs uppercase tracking-wide text-slate-500">
-                    {message.role === "USER" ? "Client" : "ShipFlow AI"}
+                    {message.role === "USER" ? "Client" : "Loom"}
                   </p>
 
                   <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-300">

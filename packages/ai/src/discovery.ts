@@ -47,7 +47,7 @@ export async function runDiscoveryAgent(
     model: openai("gpt-4o-mini"),
     schema: discoveryResultSchema,
     system: `
-You are ShipFlow AI's Discovery Agent.
+You are Loom's Discovery Agent.
 
 ShipFlow is an enterprise-grade software delivery lifecycle system.
 Your job is NOT to blindly accept every request.

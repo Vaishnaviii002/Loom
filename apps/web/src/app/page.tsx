@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LoomLogo } from "@/components/brand/loom-logo";
 
 const workflow = [
   { label: "Request", icon: "✉" },
@@ -145,9 +146,7 @@ export default function HomePage() {
         <div className="pointer-events-none absolute bottom-[-140px] right-[-120px] h-[420px] w-[420px] rounded-full bg-[#aa4825]/10 blur-[120px]" />
 
         <nav className="relative z-10 flex items-center justify-between">
-          <h1 className="text-xl font-semibold tracking-tight">
-            ShipFlow <span className="text-[#aa4825]">AI</span>
-          </h1>
+          <LoomLogo size="small" />
 
           <div className="flex items-center gap-3">
             <Link
@@ -178,7 +177,7 @@ export default function HomePage() {
             </h2>
 
             <p className="mt-6 max-w-2xl text-lg leading-8 text-white/60">
-              ShipFlow AI helps software teams move from feature request to PRD,
+              Loom helps software teams move from feature request to PRD,
               tasks, GitHub pull request, AI review, fix loop, human approval,
               and shipped release.
             </p>
@@ -232,7 +231,7 @@ export default function HomePage() {
             <div className="animate-pulse-glow absolute flex h-[118px] w-[118px] items-center justify-center rounded-3xl border border-[#aa4825]/35 bg-[#aa4825]/10">
               <div className="flex h-[72px] w-[72px] rotate-45 items-center justify-center rounded-2xl bg-[#aa4825] shadow-[0_0_40px_rgba(170,72,37,0.45)]">
                 <span className="-rotate-45 text-3xl font-black text-white">
-                  S
+                  L
                 </span>
               </div>
             </div>
@@ -244,7 +243,7 @@ export default function HomePage() {
         <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
           <div className="animate-fade-up">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#aa4825]">
-              How ShipFlow Platform Works
+              How Loom Platform Works
             </p>
             <h2 className="mt-4 max-w-md text-4xl font-semibold leading-tight">
               Built for every part of the{" "}
@@ -366,7 +365,7 @@ export default function HomePage() {
   </div>
 
   <footer className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-8 text-sm text-white/40 md:flex-row md:items-center md:justify-between">
-    <p>© 2026 ShipFlow AI. All rights reserved.</p>
+    <p>© 2026 Loom. All rights reserved.</p>
     <div className="flex gap-5">
       <span>Product</span>
       <span>Docs</span>

@@ -125,7 +125,7 @@ export default function NewClientTicketPage() {
           </h2>
 
           <p className="mt-4 max-w-3xl text-slate-400">
-            Add the initial details. After this, ShipFlow AI will clarify the
+            Add the initial details. After this, Loom will clarify the
             requirement, check if it already exists, and ask follow-up questions
             if the context is incomplete.
           </p>

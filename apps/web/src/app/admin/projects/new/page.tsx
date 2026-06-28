@@ -285,7 +285,7 @@ export default async function NewProjectPage() {
         </h1>
 
         <p className="mt-2 text-sm text-white/45">
-          Enter a GitHub repository. ShipFlow AI will fetch the repository
+          Enter a GitHub repository. Loom will fetch the repository
           description and tech stack automatically when the project is created.
         </p>
 

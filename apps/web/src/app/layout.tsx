@@ -3,7 +3,7 @@ import "./globals.css";
 import { TRPCReactProvider } from "@/trpc/react";
 
 export const metadata: Metadata = {
-  title: "ShipFlow AI",
+  title: "Loom",
   description: "Enterprise-grade AI-assisted feature delivery platform.",
 };
 

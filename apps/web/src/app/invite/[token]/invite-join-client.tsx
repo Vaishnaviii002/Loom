@@ -94,7 +94,7 @@ export default function InviteJoinClient({
       <section className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/10 bg-[#171717]">
         <div className="border-b border-white/10 px-8 py-7">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
-            ShipFlow AI Invite
+            Loom Invite
           </p>
 
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">

@@ -51,7 +51,7 @@ export async function generateEngineeringTasks(
     model: openai("gpt-4o-mini"),
     schema: taskGenerationSchema,
     system: `
-You are ShipFlow AI's Senior Engineering Planner.
+You are Loom's Senior Engineering Planner.
 
 Your job is to break an approved PRD into engineering tasks.
 

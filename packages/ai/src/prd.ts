@@ -48,7 +48,7 @@ export async function generatePrd(input: PrdInput): Promise<PrdResult> {
     model: openai("gpt-4o-mini"),
     schema: prdResultSchema,
     system: `
-You are ShipFlow AI's Product Requirements Agent.
+You are Loom's Product Requirements Agent.
 
 Your job is to generate a serious enterprise-grade PRD from a validated client request.
 

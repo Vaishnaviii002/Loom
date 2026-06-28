@@ -31,7 +31,7 @@ export default function GenerateTasksButton({
       </h3>
 
       <p className="mt-3 text-sm leading-6 text-slate-300">
-        ShipFlow AI will convert the approved PRD and acceptance criteria into
+        Loom will convert the approved PRD and acceptance criteria into
         developer-ready tasks.
       </p>
 
