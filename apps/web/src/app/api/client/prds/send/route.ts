@@ -145,28 +145,6 @@
 //   }
 // }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import { auth } from "@/lib/auth";
 import { db } from "@shipflow/db";
 import { headers } from "next/headers";
@@ -310,12 +288,18 @@ export async function GET(request: NextRequest) {
 
     const sent = logs
       .map((log) => parseMetadata(log.metadata))
-      .filter((item) => item?.projectId === projectId);
+      .filter((item): item is SentPrdMetadata =>
+        Boolean(item && item.projectId === projectId),
+      );
 
     return NextResponse.json({
       ok: true,
-      sentPrdIds: sent.map((item) => item.prdId).filter(Boolean),
-      sentRequestIds: sent.map((item) => item.requestId).filter(Boolean),
+      sentPrdIds: sent
+        .map((item) => item.prdId)
+        .filter((id): id is string => Boolean(id)),
+      sentRequestIds: sent
+        .map((item) => item.requestId)
+        .filter((id): id is string => Boolean(id)),
     });
   } catch {
     return NextResponse.json(

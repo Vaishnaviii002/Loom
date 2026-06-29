@@ -633,7 +633,7 @@ function DashboardView({
 
               <RequestDetailPreview request={selectedRequest} />
 
-              {showAiDetails && (
+              {/* {showAiDetails && (
                 <div className="mt-6">
                   <p className="text-sm font-semibold text-[#aa4825]">
                     Add more details
@@ -662,7 +662,7 @@ function DashboardView({
                     Send
                   </button>
                 </div>
-              )}
+              )} */}
 
               {prdError && (
                 <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
@@ -670,13 +670,13 @@ function DashboardView({
                 </div>
               )}
 
-              <div className="mt-6 flex flex-col gap-3  sm:flex-row">
+              <div className="mt-9 flex flex-col gap-3  sm:flex-row">
                 <button
                   type="button"
                   onClick={() => setShowAiDetails((value) => !value)}
                   className="h-12 flex-1 rounded-xl border border-white/10 text-sm font-semibold text-white/70 transition hover:border-[#aa4825]/50 hover:text-white"
                 >
-                  {showAiDetails ? "Hide details" : "Add more details"}
+                  {showAiDetails ? "Verify" : "Details"}
                 </button>
 
                 <button
