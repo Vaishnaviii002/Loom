@@ -47,7 +47,7 @@ type ClientPrd = {
   createdAt: string;
 };
 
-type ActiveView = "dashboard" | "new-request" | "prds" | "progress";
+type ActiveView = "dashboard" | "new-request" | "prds";
 
 type AiDraft = {
   title: string;
@@ -136,6 +136,72 @@ function getRequestDetails(rawDescription: string) {
 function getAdditionalInfo(rawDescription: string) {
   const parts = rawDescription.split(ADDITIONAL_INFO_MARKER);
   return parts[1] || "";
+}
+
+function getStoredSection(rawDescription: string, heading: string) {
+  const cleanDescription = getRequestDetails(rawDescription);
+  const marker = `${heading}:\n`;
+  const start = cleanDescription.indexOf(marker);
+
+  if (start === -1) {
+    return "";
+  }
+
+  const bodyStart = start + marker.length;
+  const nextSection = cleanDescription.indexOf("\n\n", bodyStart);
+
+  if (nextSection === -1) {
+    return cleanDescription.slice(bodyStart).trim();
+  }
+
+  return cleanDescription.slice(bodyStart, nextSection).trim();
+}
+
+function parseStoredList(value: string) {
+  return value
+    .split("\n")
+    .map((line) => line.replace(/^[-•]\s*/, "").trim())
+    .filter(Boolean);
+}
+
+function getDashboardRequestDetails(request: RequestItem) {
+  const rawDescription = request.rawDescription;
+
+  return {
+    summary: {
+      title: request.title,
+      type: request.type,
+      priority: request.priority,
+    },
+    details: {
+      problem: getStoredSection(rawDescription, "Problem"),
+      expectedOutcome: getStoredSection(rawDescription, "Expected outcome"),
+      duplicateRisk: getStoredSection(rawDescription, "Duplicate risk"),
+    },
+    repository: {
+      understood:
+        getStoredSection(rawDescription, "What Loom understood") ||
+        getStoredSection(rawDescription, "Repository understanding"),
+      changeImpact: getStoredSection(rawDescription, "Change impact"),
+      affectedAreas: parseStoredList(
+        getStoredSection(rawDescription, "Likely affected areas"),
+      ),
+    },
+    clarification: {
+      questions: parseStoredList(
+        getStoredSection(rawDescription, "Follow-up questions"),
+      ),
+    },
+    acceptance: {
+      criteria: parseStoredList(
+        getStoredSection(rawDescription, "Acceptance criteria"),
+      ),
+    },
+    additionalClientDetails: getStoredSection(
+      rawDescription,
+      "Additional client details",
+    ),
+  };
 }
 
 export default function ClientDashboard({
@@ -244,12 +310,6 @@ export default function ClientDashboard({
                 active={activeView === "prds"}
                 onClick={() => setActiveView("prds")}
               />
-
-              <SidebarButton
-                label="Project Progress"
-                active={activeView === "progress"}
-                onClick={() => setActiveView("progress")}
-              />
             </nav>
           </div>
 
@@ -296,10 +356,8 @@ export default function ClientDashboard({
               />
             )}
 
-            {activeView === "prds" && <PrdView prds={clientPrds} />}
-
-            {activeView === "progress" && (
-              <ProgressView requests={requestItems} />
+            {activeView === "prds" && (
+              <PrdView prds={clientPrds} projectId={project.id} />
             )}
           </div>
         </section>
@@ -573,16 +631,7 @@ function DashboardView({
                 </div>
               </div>
 
-              <div className="mt-6 rounded-2xl border border-white/10 bg-[#101010] p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
-                  Full request details
-                </p>
-
-                <p className="mt-5 whitespace-pre-wrap text-sm leading-7 text-white/55">
-                  {selectedRequest.rawDescription ||
-                    "No request details were saved."}
-                </p>
-              </div>
+              <RequestDetailPreview request={selectedRequest} />
 
               {showAiDetails && (
                 <div className="mt-6">
@@ -643,6 +692,72 @@ function DashboardView({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function RequestDetailPreview({ request }: { request: RequestItem }) {
+  const details = getDashboardRequestDetails(request);
+
+  return (
+    <div className="mt-6 rounded-2xl border border-white/10 bg-[#101010] p-6">
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
+        AI request details
+      </p>
+
+      <div className="mt-6 space-y-8">
+        <TicketSection title="Summary">
+          <Point label="Title" value={details.summary.title} />
+          <Point label="Type" value={details.summary.type} />
+          <Point label="Priority" value={details.summary.priority} />
+        </TicketSection>
+
+        <TicketSection title="Details">
+          <Point label="Problem" value={details.details.problem} />
+          <Point
+            label="Expected outcome"
+            value={details.details.expectedOutcome}
+          />
+          <Point label="Duplicate risk" value={details.details.duplicateRisk} />
+        </TicketSection>
+
+        <TicketSection title="Repository understanding">
+          <Point
+            label="What Loom understood"
+            value={details.repository.understood}
+          />
+
+          <Point label="Change impact" value={details.repository.changeImpact} />
+
+          <BulletList
+            label="Likely affected areas"
+            items={details.repository.affectedAreas}
+            emptyText="No specific affected area detected."
+          />
+        </TicketSection>
+
+        <TicketSection title="Clarification needed">
+          <BulletList
+            label="Follow-up questions"
+            items={details.clarification.questions}
+            emptyText="No follow-up questions generated."
+          />
+        </TicketSection>
+
+        <TicketSection title="Acceptance criteria">
+          <BulletList
+            label="Success criteria"
+            items={details.acceptance.criteria}
+            emptyText="No acceptance criteria generated."
+          />
+        </TicketSection>
+
+        {details.additionalClientDetails && (
+          <TicketSection title="Additional client details">
+            <Point label="Client note" value={details.additionalClientDetails} />
+          </TicketSection>
+        )}
+      </div>
     </div>
   );
 }
@@ -748,16 +863,35 @@ function NewRequestView({
 
     const safeType = draft.type === "OTHER" ? "CHANGE" : draft.type;
 
+    const draftMissingQuestions = Array.isArray(draft.missingQuestions)
+      ? draft.missingQuestions
+      : [];
+
+    const draftAcceptanceCriteria = Array.isArray(draft.acceptanceCriteria)
+      ? draft.acceptanceCriteria
+      : [];
+
+    const draftAffectedAreas = Array.isArray(draft.affectedAreas)
+      ? draft.affectedAreas
+      : [];
+
     const rawDescription = [
       `Client selected type:\n${requestType}`,
       `Problem:\n${draft.problem}`,
       `Expected outcome:\n${draft.expectedOutcome}`,
+      `Duplicate risk:\n${draft.duplicateRisk}`,
+      `What Loom understood:\n${
+        draft.repoUnderstanding || draft.repositoryContext
+      }`,
       `Repository understanding:\n${draft.repositoryContext}`,
       `Change impact:\n${draft.changeImpact}`,
-      `Likely affected areas:\n${draft.affectedAreas
+      `Likely affected areas:\n${draftAffectedAreas
         .map((item) => `- ${item}`)
         .join("\n")}`,
-      `Acceptance criteria:\n${draft.acceptanceCriteria
+      `Follow-up questions:\n${draftMissingQuestions
+        .map((item) => `- ${item}`)
+        .join("\n")}`,
+      `Acceptance criteria:\n${draftAcceptanceCriteria
         .map((item) => `- ${item}`)
         .join("\n")}`,
       additionalDetails.trim()
@@ -1076,20 +1210,97 @@ function BulletList({
   );
 }
 
-function PrdView({ prds }: { prds: ClientPrd[] }) {
+function PrdView({
+  prds,
+  projectId,
+}: {
+  prds: ClientPrd[];
+  projectId: string;
+}) {
   const [expandedPrdId, setExpandedPrdId] = useState<string | null>(null);
+  const [sendingPrdId, setSendingPrdId] = useState<string | null>(null);
+  const [sentPrdIds, setSentPrdIds] = useState<string[]>([]);
+  const [sentRequestIds, setSentRequestIds] = useState<string[]>([]);
+  const [sendError, setSendError] = useState("");
+
+  useEffect(() => {
+    async function loadSentPrds() {
+      try {
+        const response = await fetch(
+          `/api/client/prds/send?projectId=${encodeURIComponent(projectId)}`,
+          {
+            method: "GET",
+            credentials: "include",
+          },
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          return;
+        }
+
+        setSentPrdIds(Array.isArray(data.sentPrdIds) ? data.sentPrdIds : []);
+        setSentRequestIds(
+          Array.isArray(data.sentRequestIds) ? data.sentRequestIds : [],
+        );
+      } catch {
+        return;
+      }
+    }
+
+    loadSentPrds();
+  }, [projectId]);
+
+  async function sendPrdToPm(prd: ClientPrd) {
+    setSendError("");
+    setSendingPrdId(prd.id);
+
+    try {
+      const response = await fetch("/api/client/prds/send", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId,
+          requestId: prd.requestId,
+          prdId: prd.id,
+          title: prd.title,
+          content: prd.content,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setSendError(data?.error || "Unable to send PRD.");
+        return;
+      }
+
+      setSentPrdIds((current) =>
+        current.includes(prd.id) ? current : [...current, prd.id],
+      );
+
+      setSentRequestIds((current) =>
+        current.includes(prd.requestId) ? current : [...current, prd.requestId],
+      );
+    } catch {
+      setSendError("Unable to send PRD.");
+    } finally {
+      setSendingPrdId(null);
+    }
+  }
 
   return (
     <section className="py-2">
-      <div className="mb-8">
-        {/* <h2 className="text-3xl font-semibold text-white">Final PRD</h2>
 
-        <p className="mt-3 max-w-4xl text-sm leading-7 text-white/45">
-          Final PRDs generated from client requests will appear here. Internal
-          engineering tasks, pull requests, code reviews, and implementation
-          details stay hidden.
-        </p> */}
-      </div>
+      {sendError && (
+        <div className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+          {sendError}
+        </div>
+      )}
 
       {prds.length === 0 ? (
         <EmptyState text="No PRD drafts are available yet." />
@@ -1098,6 +1309,11 @@ function PrdView({ prds }: { prds: ClientPrd[] }) {
           {prds.map((prd) => {
             const isExpanded = expandedPrdId === prd.id;
             const sections = splitPrdSections(prd.content);
+            const isSent =
+              sentPrdIds.includes(prd.id) ||
+              sentRequestIds.includes(prd.requestId);
+            const isSending = sendingPrdId === prd.id;
+            const visibleStatus = isSent ? "SENT TO PM" : prd.status;
 
             return (
               <article
@@ -1110,12 +1326,12 @@ function PrdView({ prds }: { prds: ClientPrd[] }) {
                       {prd.title}
                     </h3>
 
-                    {/* <p className="mt-3 text-sm text-[#ff9c73]">
-                      Status: {prd.status}
-                    </p> */}
+                    <p className="mt-3 text-sm text-[#ff9c73]">
+                      Status: {visibleStatus}
+                    </p>
                   </div>
 
-                  <Badge label={prd.status} />
+                  <Badge label={visibleStatus} />
                 </div>
 
                 {!isExpanded ? (
@@ -1124,13 +1340,28 @@ function PrdView({ prds }: { prds: ClientPrd[] }) {
                       {getPrdPreview(prd.content)}
                     </p>
 
-                    <button
-                      type="button"
-                      onClick={() => setExpandedPrdId(prd.id)}
-                      className="mt-6 rounded-xl border border-[#aa4825]/25 bg-[#aa4825]/10 px-5 py-3 text-sm font-semibold text-[#ff9c73] transition hover:border-[#aa4825]/50 hover:bg-[#aa4825]/15"
-                    >
-                      View more
-                    </button>
+                    <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedPrdId(prd.id)}
+                        className="h-12 flex-1 rounded-xl border border-[#aa4825]/25 bg-[#aa4825]/10 px-5 text-sm font-semibold text-[#ff9c73] transition hover:border-[#aa4825]/50 hover:bg-[#aa4825]/15"
+                      >
+                        View more
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => sendPrdToPm(prd)}
+                        disabled={isSending || isSent}
+                        className="h-12 flex-1 rounded-xl bg-[#aa4825] px-5 text-sm font-semibold text-white transition hover:bg-[#8f3b1f] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSent
+                          ? "Completed"
+                          : isSending
+                            ? "Sending..."
+                            : "Send PRD"}
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="mt-10 space-y-9">
@@ -1152,13 +1383,28 @@ function PrdView({ prds }: { prds: ClientPrd[] }) {
                       ))
                     )}
 
-                    <button
-                      type="button"
-                      onClick={() => setExpandedPrdId(null)}
-                      className="rounded-xl border border-white/10 px-5 py-3 text-sm font-semibold text-white/70 transition hover:border-[#aa4825]/50 hover:text-white"
-                    >
-                      Show less
-                    </button>
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedPrdId(null)}
+                        className="h-12 flex-1 rounded-xl border border-white/10 px-5 text-sm font-semibold text-white/70 transition hover:border-[#aa4825]/50 hover:text-white"
+                      >
+                        Show less
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => sendPrdToPm(prd)}
+                        disabled={isSending || isSent}
+                        className="h-12 flex-1 rounded-xl bg-[#aa4825] px-5 text-sm font-semibold text-white transition hover:bg-[#8f3b1f] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSent
+                          ? "Completed"
+                          : isSending
+                            ? "Sending..."
+                            : "Send PRD"}
+                      </button>
+                    </div>
                   </div>
                 )}
               </article>
@@ -1166,46 +1412,6 @@ function PrdView({ prds }: { prds: ClientPrd[] }) {
           })}
         </div>
       )}
-    </section>
-  );
-}
-
-function ProgressView({ requests }: { requests: RequestItem[] }) {
-  return (
-    <section className="rounded-2xl border border-white/10 bg-[#171717] p-6">
-      <h2 className="text-xl font-semibold">Project progress</h2>
-
-      <div className="mt-6 grid gap-4 md:grid-cols-4">
-        <StatCard
-          label="Submitted"
-          value={requests
-            .filter((item) => item.status === "SUBMITTED")
-            .length.toString()}
-        />
-
-        <StatCard
-          label="In review"
-          value={requests
-            .filter((item) => item.status.includes("REVIEW"))
-            .length.toString()}
-        />
-
-        <StatCard
-          label="In delivery"
-          value={requests
-            .filter((item) =>
-              ["IN_PROGRESS", "DEVELOPMENT"].includes(item.status),
-            )
-            .length.toString()}
-        />
-
-        <StatCard
-          label="Shipped"
-          value={requests
-            .filter((item) => ["SHIPPED", "COMPLETED"].includes(item.status))
-            .length.toString()}
-        />
-      </div>
     </section>
   );
 }
@@ -1308,8 +1514,7 @@ function EmptyState({ text }: { text: string }) {
 function getViewTitle(view: ActiveView) {
   if (view === "dashboard") return "Details";
   if (view === "new-request") return "New Request";
-  if (view === "prds") return "PRD";
-  return "Project Progress";
+  return "PRD";
 }
 
 function getViewSubtitle(view: ActiveView) {
@@ -1321,9 +1526,5 @@ function getViewSubtitle(view: ActiveView) {
     return "Talk to AI Discovery to convert a feature, bug, update, or change into a clear ticket.";
   }
 
-  if (view === "prds") {
-    return "Review client-facing requirement drafts only. Internal tasks, code, and reviews are hidden.";
-  }
-
-  return "Track project progress without seeing code, pull requests, internal tasks, or internal reviews.";
+  return "Review client-facing requirement drafts only. Internal tasks, code, and reviews are hidden.";
 }
