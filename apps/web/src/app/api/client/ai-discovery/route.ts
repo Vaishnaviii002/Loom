@@ -159,6 +159,138 @@ function cleanTitle(message: string, fallbackType: string) {
   return firstLine.length > 90 ? `${firstLine.slice(0, 87)}...` : firstLine;
 }
 
+function getRequestSpecificContext(message: string, type: string) {
+  const lower = message.toLowerCase();
+
+  if (
+    lower.includes("logo") ||
+    lower.includes("brand") ||
+    lower.includes("icon")
+  ) {
+    return {
+      productArea: "Branding / header / visual identity",
+      expectedOutcome:
+        "The product logo or brand element should be updated in the visible UI without breaking layout consistency.",
+      owner:
+        "Frontend Developer should handle the UI change. Product Manager should confirm brand asset, size, placement, and usage rules.",
+      impact:
+        "This may affect the header, navigation, landing page branding, and visual consistency across public-facing screens.",
+      questions: [
+        "Which logo should be used and is the final asset available?",
+        "Where should the logo be updated: landing page only, dashboard, auth pages, or everywhere?",
+        "Should the logo size, color, spacing, or placement change?",
+      ],
+      criteria: [
+        "The correct logo is visible in the requested product area.",
+        "The logo remains responsive across screen sizes.",
+        "The update does not break header, navigation, or page layout.",
+      ],
+    };
+  }
+
+  if (
+    lower.includes("picture") ||
+    lower.includes("image") ||
+    lower.includes("photo") ||
+    lower.includes("landing")
+  ) {
+    return {
+      productArea: "Landing page / hero section / visual content",
+      expectedOutcome:
+        "The landing page should display the requested image content in the correct section with responsive layout and clean visual alignment.",
+      owner:
+        "Frontend Developer should implement the UI update. Product Manager should confirm number of images, placement, and visual rules.",
+      impact:
+        "This may affect landing page layout, image loading, responsiveness, visual hierarchy, and user first impression.",
+      questions: [
+        "Which landing page section should contain the image: hero, features, testimonials, or another section?",
+        "How many images should be shown and what are the minimum/maximum image requirements?",
+        "Should images be uploaded by admin, hardcoded as static assets, or fetched dynamically?",
+      ],
+      criteria: [
+        "Images appear in the correct landing page section.",
+        "Images are responsive on desktop and mobile.",
+        "The page layout remains clean and does not shift unexpectedly.",
+      ],
+    };
+  }
+
+  if (
+    lower.includes("login") ||
+    lower.includes("sign in") ||
+    lower.includes("password") ||
+    lower.includes("auth")
+  ) {
+    return {
+      productArea: "Authentication / sign-in flow",
+      expectedOutcome:
+        "The authentication flow should allow the correct user role to sign in and reach the correct role-based dashboard.",
+      owner:
+        "Backend Developer should verify authentication/session logic. Frontend Developer should verify sign-in UI and redirects.",
+      impact:
+        "This may affect login, session handling, role-based routing, invite acceptance, and dashboard access control.",
+      questions: [
+        "Which role is affected: client, admin, PM, developer, or reviewer?",
+        "Should the user be redirected to a specific project after login?",
+        "Is this issue happening after invite acceptance or normal sign-in?",
+      ],
+      criteria: [
+        "The correct user can sign in with valid credentials.",
+        "The user is redirected to the correct role-based dashboard.",
+        "Unauthorized users cannot access dashboards for other roles or projects.",
+      ],
+    };
+  }
+
+  if (
+    lower.includes("button") ||
+    lower.includes("color") ||
+    lower.includes("ui") ||
+    lower.includes("design") ||
+    lower.includes("layout")
+  ) {
+    return {
+      productArea: "User interface / layout / visual design",
+      expectedOutcome:
+        "The requested UI change should improve the visual experience while keeping the existing product flow stable.",
+      owner:
+        "Frontend Developer should implement the visual change. Product Manager should confirm exact UI behavior and acceptance rules.",
+      impact:
+        "This may affect component styling, layout spacing, responsiveness, and consistency with the existing design system.",
+      questions: [
+        "Which page or component should be changed?",
+        "What exact visual result should the client see after the change?",
+        "Should this change apply globally or only to one page?",
+      ],
+      criteria: [
+        "The requested UI change is visible in the correct area.",
+        "The change matches the existing design language.",
+        "The UI remains responsive and usable.",
+      ],
+    };
+  }
+
+  return {
+    productArea: `${type} request area needs confirmation`,
+    expectedOutcome:
+      "The requested change should be clarified and converted into a specific implementation-ready requirement.",
+    owner:
+      "Product Manager should clarify missing requirements first. Senior Engineer can review technical scope after clarification.",
+    impact:
+      "Impact depends on the exact product area, user flow, and expected behavior confirmed by the client.",
+    questions: [
+      "Which exact page, feature, or workflow should this request affect?",
+      "Who is the main user affected by this request?",
+      "What should happen after the change is completed?",
+    ],
+    criteria: [
+      "The request has a clearly defined affected area.",
+      "The expected behavior is clear.",
+      "The product team can convert the request into a PRD without ambiguity.",
+    ],
+  };
+}
+
 function safeJsonParse(value: string): AiDraft | null {
   try {
     const cleaned = value
@@ -167,7 +299,14 @@ function safeJsonParse(value: string): AiDraft | null {
       .replace(/```$/i, "")
       .trim();
 
-    return JSON.parse(cleaned) as AiDraft;
+    const firstBrace = cleaned.indexOf("{");
+    const lastBrace = cleaned.lastIndexOf("}");
+
+    if (firstBrace === -1 || lastBrace === -1) {
+      return null;
+    }
+
+    return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1)) as AiDraft;
   } catch {
     return null;
   }
@@ -188,53 +327,63 @@ function fallbackDraft({
   techStack: string;
   affectedAreas: string[];
 }): AiDraft {
+  const requestContext = getRequestSpecificContext(message, type);
+
+  const safeAffectedAreas =
+    affectedAreas.length > 0 ? affectedAreas : [requestContext.productArea];
+
   return {
     title: cleanTitle(message, type),
     type,
     priority: getPriority(message),
+
     shouldProceed: true,
     needsMoreContext: true,
     alreadyExists: false,
+
     businessProblem:
-      "The business problem needs to be confirmed with the client before this becomes implementation-ready.",
-    problem: message,
-    expectedOutcome:
-      "The requested change should be reviewed by the product team and converted into a clear implementation-ready requirement.",
-    whoWillUseIt: "Client/user role needs confirmation.",
-    whoShouldResolve:
-      "Product Manager should clarify requirements first, then Senior Engineer can break it into tasks.",
-    missingQuestions: [
-      "Who is the main user affected by this change?",
-      "What exact behavior or visual result should be visible after the change?",
-      "Are there any brand, design, deadline, or business constraints?",
-    ],
-    acceptanceCriteria: [
-      "The change is clearly described and scoped for this project.",
-      "The product team can review the request and convert it into a PRD.",
-      "The final delivery can be verified by the client without exposing internal code or reviews.",
-    ],
+      "The business value should be confirmed by the client before this request moves into final PRD approval.",
+
+    problem: `Client requested: ${message}`,
+
+    expectedOutcome: requestContext.expectedOutcome,
+
+    whoWillUseIt:
+      "The affected user role needs confirmation from the client before final PRD generation.",
+
+    whoShouldResolve: requestContext.owner,
+
+    missingQuestions: requestContext.questions,
+
+    acceptanceCriteria: requestContext.criteria,
+
     duplicateRisk:
-      "No duplicate check could be confirmed automatically. Product Manager should verify if this behavior already exists.",
+      "No exact duplicate could be confirmed from the available repository context. Product Manager should still verify whether similar functionality already exists.",
+
     repositoryContext: [
       `Repository: ${repoFullName || "Not connected"}`,
       `Tech stack: ${techStack || "Not detected"}`,
       `Repository summary: ${repoSummary}`,
+      `Request-specific product area: ${requestContext.productArea}`,
     ].join("\n"),
-    repoUnderstanding:
-      "Loom reviewed the connected repository metadata and selected relevant project files for this request.",
+
+    repoUnderstanding: `Loom reviewed the connected repository context for this request and mapped it to: ${requestContext.productArea}.`,
+
     existingFunctionalityCheck:
-      "Loom could not fully confirm whether this already exists from fallback analysis.",
-    requiredFiles: affectedAreas,
-    changeImpact:
-      "This request may require updates in the project UI or product behavior depending on the selected files.",
-    affectedAreas,
-    additionalInformationNeeded: [
-      "Exact user flow/page where the change should appear.",
-      "Expected behavior after the change.",
-      "Business or design constraints.",
-    ],
+      "Loom could not fully confirm whether this exact behavior already exists from the available fallback analysis.",
+
+    requiredFiles: safeAffectedAreas,
+
+    changeImpact: requestContext.impact,
+
+    affectedAreas: safeAffectedAreas,
+
+    additionalInformationNeeded: requestContext.questions,
+
     prdReadiness: "NEEDS_MORE_CONTEXT",
-    clientEducation: "",
+
+    clientEducation:
+      "If this capability already exists in the product, the request may only require training, documentation, or a smaller UI improvement instead of a new feature build.",
   };
 }
 
@@ -301,31 +450,77 @@ async function generateDraftWithOpenAI({
           content: AI_DISCOVERY_SYSTEM_PROMPT,
         },
         {
-          role: "user",
-          content: `
+  role: "user",
+  content: `
 Client request:
 ${message}
 
 Selected request type:
 ${type}
 
-Repository context:
-${JSON.stringify(repoPromptContext, null, 2)}
+Project:
+${projectName}
+
+Repository:
+${repoFullName}
+
+Default branch:
+${defaultBranch}
+
+GitHub description:
+${repoDescription || "No GitHub description."}
+
+Detected tech stack:
+${techStack || "Not detected"}
+
+Repository summary:
+${repoSummary}
 
 Relevant repository file context:
 ${fileContext}
 
-Analyze the request against the repository context.
-Check if it already exists.
-Check if it is duplicate or unnecessary.
-Ask follow-up questions if context is missing.
-Explain who should resolve it.
-Explain likely required files or areas.
-Explain product impact.
-If valid, prepare the request for later PRD generation.
-Return JSON only.
+IMPORTANT BEHAVIOR RULES:
+- Every field must be specific to this exact client request.
+- Do not reuse generic sentences.
+- Do not say "this request may require updates" unless you explain what area and why.
+- Do not always say Product Manager should verify unless there is a real reason.
+- If the request is about logo, talk about logo, branding, header/auth/dashboard usage.
+- If the request is about images, talk about landing page image placement, quantity, responsiveness, assets, and layout.
+- If the request is about authentication, talk about login, roles, sessions, dashboard redirect, and access.
+- If the request is about UI, talk about exact UI area, layout, component, visual behavior, and responsive impact.
+- Use only files from the provided repository context.
+- Ask follow-up questions only if needed for implementation.
+- If the feature already exists, educate the client instead of creating unnecessary work.
+- If it does not exist, prepare a clear request draft for PRD generation.
+
+Return only valid JSON with this exact structure:
+{
+  "title": "specific request title",
+  "type": "FEATURE | BUG | CHANGE | IMPROVEMENT | NEW_PRODUCT | OTHER",
+  "priority": "LOW | MEDIUM | HIGH | URGENT",
+  "shouldProceed": true,
+  "needsMoreContext": false,
+  "alreadyExists": false,
+  "duplicateRisk": "LOW | MEDIUM | HIGH",
+  "businessProblem": "specific business problem for this request",
+  "problem": "specific problem statement based on the client request",
+  "expectedOutcome": "specific expected result after this request is completed",
+  "whoWillUseIt": "specific user or role affected",
+  "whoShouldResolve": "specific responsible role/team",
+  "repositoryContext": "client-safe repository understanding specific to this request",
+  "repoUnderstanding": "what Loom understood from the repo for this request",
+  "existingFunctionalityCheck": "whether similar functionality exists and where",
+  "requiredFiles": ["only files or areas from provided context"],
+  "affectedAreas": ["only request-specific affected areas"],
+  "changeImpact": "specific product impact for this request",
+  "missingQuestions": ["specific follow-up question"],
+  "acceptanceCriteria": ["specific acceptance criterion"],
+  "additionalInformationNeeded": ["specific missing detail"],
+  "prdReadiness": "READY | NEEDS_MORE_CONTEXT | DO_NOT_BUILD | ALREADY_EXISTS",
+  "clientEducation": "education message only if client may be confused, otherwise empty string"
+}
 `,
-        },
+},
       ],
     }),
   });

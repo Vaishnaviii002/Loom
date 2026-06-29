@@ -8,7 +8,6 @@ export const runtime = "nodejs";
 const REQUEST_TYPES = [
   "FEATURE",
   "BUG",
-  "CHANGE",
   "IMPROVEMENT",
   "NEW_PRODUCT",
 ] as const;
@@ -16,8 +15,8 @@ const REQUEST_TYPES = [
 type RequestTypeValue = (typeof REQUEST_TYPES)[number];
 
 function normalizeRequestType(value: string): RequestTypeValue {
-  if (value === "OTHER") {
-    return "CHANGE";
+  if (value === "CHANGE" || value === "OTHER") {
+    return "IMPROVEMENT";
   }
 
   if (REQUEST_TYPES.includes(value as RequestTypeValue)) {
@@ -55,9 +54,8 @@ export async function POST(request: NextRequest) {
 
     const projectId = sanitizeText(String(body.projectId ?? ""));
     const title = sanitizeText(String(body.title ?? ""));
-    const type = normalizeRequestType(
-      sanitizeText(String(body.type ?? "FEATURE")),
-    );
+    const originalType = sanitizeText(String(body.type ?? "FEATURE"));
+    const type = normalizeRequestType(originalType);
     const priority = normalizePriority(
       sanitizeText(String(body.priority ?? "MEDIUM")),
     );
@@ -140,7 +138,8 @@ export async function POST(request: NextRequest) {
             projectId,
             projectName: sanitizeText(access.project.name),
             title,
-            type,
+            requestedType: originalType,
+            storedType: type,
             priority,
           }),
         },
@@ -151,7 +150,9 @@ export async function POST(request: NextRequest) {
       ok: true,
       ticketId: ticket.id,
     });
-  } catch {
+  } catch (error) {
+    console.error("CLIENT_REQUEST_CREATE_ERROR", error);
+
     return NextResponse.json(
       { error: "Unable to create request." },
       { status: 500 },

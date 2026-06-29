@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@shipflow/db";
 import { NextRequest, NextResponse } from "next/server";
 
+
 export const runtime = "nodejs";
 
 function getRedirectPath(role: string, projectId: string | null) {

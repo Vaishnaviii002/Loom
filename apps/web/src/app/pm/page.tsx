@@ -1,109 +1,215 @@
-import Link from "next/link";
-import { requireRole } from "@/lib/role-routing";
+import { auth } from "@/lib/auth";
 import { db } from "@shipflow/db";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
-export default async function PMDashboardPage() {
-  const { session, membership } = await requireRole(["PM"]);
+export const dynamic = "force-dynamic";
 
-  const [totalRequests, discoveryRequests, prdDrafts, approvedPrds] =
-    await Promise.all([
-      db.featureRequest.count({
-        where: {
-          project: {
-            workspaceId: membership.workspaceId,
-          },
+type PageProps = {
+  searchParams: Promise<{
+    projectId?: string;
+  }>;
+};
+
+export default async function ProductManagerPage({ searchParams }: PageProps) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user?.id || !session.user.email) {
+    redirect("/auth/sign-in");
+  }
+
+  const params = await searchParams;
+  const requestedProjectId = String(params.projectId ?? "").trim();
+
+  const membership = await db.membership.findFirst({
+    where: {
+      userId: session.user.id,
+    },
+    orderBy: {
+      createdAt: "asc",
+    },
+  });
+
+  if (!membership) {
+    redirect("/auth/sign-in");
+  }
+
+  const isPm = membership.role === "PM";
+  const isAdmin = membership.role === "ADMIN";
+
+  if (!isPm && !isAdmin) {
+    redirect("/auth/redirect");
+  }
+
+  let projectId = requestedProjectId;
+
+  if (isPm && !projectId) {
+    const acceptedInvite = await db.invite.findFirst({
+      where: {
+        email: session.user.email,
+        role: "PM" as any,
+        status: "ACCEPTED" as any,
+        projectId: {
+          not: null,
         },
-      }),
-      db.featureRequest.count({
-        where: {
-          status: "DISCOVERY",
-          project: {
-            workspaceId: membership.workspaceId,
-          },
+      },
+      orderBy: {
+        acceptedAt: "desc",
+      },
+      select: {
+        projectId: true,
+      },
+    });
+
+    projectId = acceptedInvite?.projectId ?? "";
+  }
+
+  if (!projectId) {
+    return (
+      <main className="min-h-screen bg-[#111111] px-10 py-10 text-white">
+        <section className="rounded-3xl border border-white/10 bg-[#171717] p-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
+            Product Manager
+          </p>
+
+          <h1 className="mt-4 text-3xl font-semibold">No project assigned</h1>
+
+          <p className="mt-3 text-sm leading-7 text-white/45">
+            This PM account is active, but no project access was found yet.
+            Admin must invite this PM to a specific project.
+          </p>
+        </section>
+      </main>
+    );
+  }
+
+  if (isPm) {
+    const acceptedInvite = await db.invite.findFirst({
+      where: {
+        email: session.user.email,
+        role: "PM" as any,
+        status: "ACCEPTED" as any,
+        projectId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!acceptedInvite) {
+      redirect("/auth/redirect");
+    }
+  }
+
+  const project = await db.project.findFirst({
+    where: isAdmin
+      ? {
+          id: projectId,
+          workspaceId: membership.workspaceId,
+        }
+      : {
+          id: projectId,
         },
-      }),
-      db.featureRequest.count({
-        where: {
-          status: "PRD_DRAFT",
-          project: {
-            workspaceId: membership.workspaceId,
-          },
-        },
-      }),
-      db.featureRequest.count({
-        where: {
-          status: "PRD_APPROVED",
-          project: {
-            workspaceId: membership.workspaceId,
-          },
-        },
-      }),
-    ]);
+    include: {
+      gitHubRepo: true,
+    },
+  });
+
+  if (!project) {
+    redirect("/auth/redirect");
+  }
 
   return (
-    <main className="min-h-screen bg-[#0b0f14] text-white">
-      <div className="border-b border-white/10 bg-black/20">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <div>
-            <p className="text-sm text-orange-300">Product Manager Portal</p>
-            <h1 className="text-2xl font-semibold">PM Dashboard</h1>
-          </div>
-
-          <div className="text-right text-sm text-slate-400">
-            <div>{session.user.email}</div>
-            <div>{membership.workspace.name}</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-7xl px-6 py-8">
-        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-8">
-          <p className="text-sm font-medium text-orange-300">
-            Product workflow
+    <main className="min-h-screen bg-[#111111] text-white">
+      <div className="grid min-h-screen lg:grid-cols-[20%_80%]">
+        <aside className="border-r border-white/10 bg-[#0f0f0f] px-5 py-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
+            Loom
           </p>
 
-          <h2 className="mt-2 text-4xl font-semibold">
-            Review requests and prepare PRDs
-          </h2>
+          <h2 className="mt-8 text-lg font-semibold">PM Portal</h2>
 
-          <p className="mt-4 max-w-3xl text-slate-400">
-            Product Managers review client requests, use AI Discovery context,
-            generate PRDs, validate acceptance criteria, and approve PRDs before
-            engineering planning begins.
+          <div className="mt-8 rounded-2xl border border-[#aa4825]/40 bg-[#aa4825]/10 p-4">
+            <p className="text-sm font-semibold text-[#ff8a50]">
+              {project.name}
+            </p>
+
+            <p className="mt-2 text-xs text-white/40">
+              {project.gitHubRepo?.repoFullName ?? "Repository not connected"}
+            </p>
+          </div>
+
+          <div className="mt-8 space-y-2">
+            <button className="w-full rounded-xl bg-white/10 px-4 py-3 text-left text-sm font-medium text-white">
+              Dashboard
+            </button>
+
+            <button className="w-full rounded-xl px-4 py-3 text-left text-sm font-medium text-white/45">
+              Requests
+            </button>
+
+            <button className="w-full rounded-xl px-4 py-3 text-left text-sm font-medium text-white/45">
+              PRDs
+            </button>
+          </div>
+        </aside>
+
+        <section className="px-10 py-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
+            Product Manager Setup
           </p>
 
-          <div className="mt-6">
-            <Link
-              href="/pm/requests"
-              className="inline-flex rounded-xl bg-orange-500 px-5 py-3 font-medium text-black transition hover:bg-orange-400"
-            >
-              Open Request Queue
-            </Link>
-          </div>
-        </section>
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight">
+            PM dashboard connected
+          </h1>
 
-        <section className="mt-8 grid gap-4 md:grid-cols-4">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-            <p className="text-sm text-slate-400">Total requests</p>
-            <p className="mt-3 text-3xl font-semibold">{totalRequests}</p>
-          </div>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-white/45">
+            This PM account is connected to the assigned project. Full PM
+            request review, PRD creation, approval, and product workflow will be
+            built in the next phase.
+          </p>
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-            <p className="text-sm text-slate-400">Discovery</p>
-            <p className="mt-3 text-3xl font-semibold">{discoveryRequests}</p>
-          </div>
+          <section className="mt-8 rounded-3xl border border-white/10 bg-[#171717] p-7">
+            <h2 className="text-2xl font-semibold">{project.name}</h2>
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-            <p className="text-sm text-slate-400">PRD drafts</p>
-            <p className="mt-3 text-3xl font-semibold">{prdDrafts}</p>
-          </div>
+            <div className="mt-6 grid gap-5 md:grid-cols-2">
+              <InfoItem
+                label="Project ID"
+                value={project.id}
+              />
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-            <p className="text-sm text-slate-400">Approved PRDs</p>
-            <p className="mt-3 text-3xl font-semibold">{approvedPrds}</p>
-          </div>
+              <InfoItem
+                label="Repository"
+                value={project.gitHubRepo?.repoFullName ?? "Not connected"}
+              />
+
+              <InfoItem
+                label="Default branch"
+                value={project.gitHubRepo?.defaultBranch ?? "Not detected"}
+              />
+
+              <InfoItem
+                label="Access mode"
+                value={isAdmin ? "Admin preview" : "Product Manager"}
+              />
+            </div>
+          </section>
         </section>
       </div>
     </main>
+  );
+}
+
+function InfoItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-[#101010] p-5">
+      <p className="text-xs uppercase tracking-[0.18em] text-white/35">
+        {label}
+      </p>
+
+      <p className="mt-3 text-sm leading-6 text-white/70">{value}</p>
+    </div>
   );
 }
