@@ -452,7 +452,7 @@ function ManageProjectsOneCard({
                 className="grid grid-cols-[1fr_1.3fr_0.7fr_0.8fr_1.4fr_0.8fr] border-b border-white/10 px-5 py-4 text-sm last:border-b-0"
               >
                 <p className="font-medium text-white">
-                  {member.user.name || "Member"}
+                  {getDisplayName(member.user.name, member.user.email)}
                 </p>
 
                 <p className="text-white/45">{member.user.email}</p>
@@ -465,7 +465,7 @@ function ManageProjectsOneCard({
                   <p className="text-white/65">
                     Name:{" "}
                     <span className="text-white">
-                      {member.user.name || "Member"}
+                      {getDisplayName(member.user.name, member.user.email)}
                     </span>
                   </p>
 
@@ -497,7 +497,7 @@ function AuditLog({
   const rows = projects.flatMap((project) =>
     project.members.map((member) => ({
       id: `${project.id}-${member.id}`,
-      memberName: member.user.name || "Pending user",
+      memberName: member.user.name || "memberName: getDisplayName(member.user.name, member.user.email),",
       memberEmail: member.user.email,
       projectId: project.id,
       projectName: project.name,
@@ -574,6 +574,21 @@ function getViewHref(role: string, projectId: string) {
   }
 
   return "/admin";
+}
+
+function getDisplayName(name: string, email: string) {
+  const cleanName = String(name ?? "").trim();
+
+  if (
+    cleanName &&
+    cleanName !== "Joined user" &&
+    cleanName !== "Pending user" &&
+    cleanName !== "Member"
+  ) {
+    return cleanName;
+  }
+
+  return email.split("@")[0] || "Member";
 }
 
 function formatRole(role: string) {

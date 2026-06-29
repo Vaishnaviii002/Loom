@@ -122,13 +122,15 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (user && user.name !== name) {
+    const cleanName = name.trim();
+
+if (user && cleanName) {
   user = await db.user.update({
     where: {
       id: user.id,
     },
     data: {
-      name,
+      name: cleanName,
     },
   });
 }
@@ -193,7 +195,7 @@ export async function POST(request: NextRequest) {
           entityId: invite.id,
           metadata: JSON.stringify({
             email: invite.email,
-            name,
+            name: cleanName,
             role: invite.role,
             projectId: invite.projectId,
             projectName: invite.project?.name ?? "",
