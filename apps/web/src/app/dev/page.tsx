@@ -1,7 +1,436 @@
+// import { auth } from "@/lib/auth";
+// import { db } from "@shipflow/db";
+// import { headers } from "next/headers";
+// import { redirect } from "next/navigation";
+// import DeveloperReviewClient from "./dev-review-client";
+
+// export const dynamic = "force-dynamic";
+
+// type PageProps = {
+//   searchParams: Promise<{
+//     projectId?: string;
+//   }>;
+// };
+
+// type DevelopmentTask = {
+//   id: string;
+//   title: string;
+//   ownerRole: string;
+//   summary?: string;
+//   workItems?: string[];
+//   affectedFiles?: string[];
+//   area?: string;
+//   reason?: string;
+//   acceptanceCriteria?: string[];
+//   status: string;
+// };
+
+// type DevelopmentBatch = {
+//   id: string;
+//   prdId: string;
+//   requestId: string;
+//   projectId: string;
+//   projectName: string;
+//   repository: string;
+//   title: string;
+//   finalContent: string;
+//   status: string;
+//   tasks: DevelopmentTask[];
+//   createdAt: string;
+//   latestReview?: LatestReview | null;
+// };
+
+// type ReviewIssue = {
+//   severity: "BLOCKING" | "NON_BLOCKING";
+//   file?: string;
+//   issue: string;
+//   recommendation: string;
+// };
+
+// type LatestReview = {
+//   projectId?: string;
+//   requestId?: string;
+//   prdId?: string;
+//   repository?: string;
+//   pullNumber?: number;
+//   pullRequestUrl?: string;
+//   pullRequestTitle?: string;
+//   pullRequestState?: string;
+//   changedFiles?: {
+//     filename: string;
+//     status: string;
+//     additions: number;
+//     deletions: number;
+//     changes: number;
+//   }[];
+//   review?: {
+//     status: "FIX_REQUIRED" | "AI_APPROVED";
+//     summary: string;
+//     issues: ReviewIssue[];
+//   };
+//   status?: "FIX_REQUIRED" | "READY_FOR_HUMAN_REVIEW";
+//   createdAt?: string;
+// };
+
+// function safeString(value: unknown) {
+//   if (typeof value !== "string") return "";
+//   return value.trim();
+// }
+
+// function parseMetadata<T>(metadata: unknown): T | null {
+//   try {
+//     if (!metadata) return null;
+
+//     const parsed =
+//       typeof metadata === "string"
+//         ? JSON.parse(metadata)
+//         : JSON.parse(JSON.stringify(metadata));
+
+//     if (!parsed || typeof parsed !== "object") {
+//       return null;
+//     }
+
+//     return parsed as T;
+//   } catch {
+//     return null;
+//   }
+// }
+
+// function reviewKey({
+//   projectId,
+//   requestId,
+//   prdId,
+// }: {
+//   projectId?: string;
+//   requestId?: string;
+//   prdId?: string;
+// }) {
+//   return `${projectId || ""}:${requestId || ""}:${prdId || ""}`;
+// }
+
+// export default async function DeveloperPage({ searchParams }: PageProps) {
+//   const session = await auth.api.getSession({
+//     headers: await headers(),
+//   });
+
+//   if (!session?.user?.id || !session.user.email) {
+//     redirect("/auth/sign-in");
+//   }
+
+//   const params = await searchParams;
+//   let projectId = String(params.projectId ?? "").trim();
+
+//   const membership = await db.membership.findFirst({
+//     where: {
+//       userId: session.user.id,
+//     },
+//     orderBy: {
+//       createdAt: "asc",
+//     },
+//   });
+
+//   if (!membership) {
+//     redirect("/auth/sign-in");
+//   }
+
+//   const isDeveloper = membership.role === "DEVELOPER";
+//   const isAdmin = membership.role === "ADMIN";
+
+//   if (!isDeveloper && !isAdmin) {
+//     redirect("/auth/redirect");
+//   }
+
+//   if (isDeveloper && !projectId) {
+//   const projectMember = await db.clientProjectMember.findFirst({
+//     where: {
+//       userId: session.user.id,
+//       role: "DEVELOPER",
+//     },
+//     orderBy: {
+//       createdAt: "asc",
+//     },
+//     select: {
+//       projectId: true,
+//     },
+//   });
+
+//   if (projectMember?.projectId) {
+//     projectId = projectMember.projectId;
+//   }
+// }
+
+// if (isDeveloper && !projectId) {
+//   const acceptedInvite = await db.invite.findFirst({
+//     where: {
+//       email: session.user.email,
+//       role: "DEVELOPER",
+//       status: "ACCEPTED",
+//       projectId: {
+//         not: null,
+//       },
+//     },
+//     orderBy: {
+//       acceptedAt: "desc",
+//     },
+//     select: {
+//       projectId: true,
+//     },
+//   });
+
+//   if (acceptedInvite?.projectId) {
+//     projectId = acceptedInvite.projectId;
+//   }
+// }
+
+// if (isDeveloper && !projectId) {
+//   const sentTaskLogs = await db.auditLog.findMany({
+//     where: {
+//       workspaceId: membership.workspaceId,
+//       action: "pm.prd.sent_to_development",
+//     },
+//     orderBy: {
+//       createdAt: "desc",
+//     },
+//     take: 50,
+//   });
+
+//   for (const log of sentTaskLogs) {
+//     const metadata = parseMetadata<{
+//       projectId?: string;
+//       tasks?: unknown[];
+//     }>(log.metadata);
+
+//     if (metadata?.projectId && Array.isArray(metadata.tasks)) {
+//       projectId = metadata.projectId;
+//       break;
+//     }
+//   }
+// }
+
+//   if (isDeveloper && !projectId) {
+//     const acceptedInvite = await db.invite.findFirst({
+//       where: {
+//         email: session.user.email,
+//         role: "DEVELOPER",
+//         status: "ACCEPTED",
+//         projectId: {
+//           not: null,
+//         },
+//       },
+//       orderBy: {
+//         acceptedAt: "desc",
+//       },
+//       select: {
+//         projectId: true,
+//       },
+//     });
+
+//     projectId = acceptedInvite?.projectId ?? "";
+//   }
+
+//   if (!projectId) {
+//     return (
+//       <main className="min-h-screen bg-[#111111] px-10 py-10 text-white">
+//         <section className="rounded-3xl border border-white/10 bg-[#171717] p-8">
+//           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
+//             Developer Portal
+//           </p>
+
+//           <h1 className="mt-4 text-3xl font-semibold">No project assigned</h1>
+
+//           <p className="mt-3 text-sm leading-7 text-white/45">
+//             This developer account is active, but no project access was found.
+//           </p>
+//         </section>
+//       </main>
+//     );
+//   }
+
+//   if (isDeveloper) {
+//     const projectMember = await db.clientProjectMember.findFirst({
+//       where: {
+//         userId: session.user.id,
+//         projectId,
+//         role: "DEVELOPER",
+//       },
+//       select: {
+//         id: true,
+//       },
+//     });
+
+//     const acceptedInvite = await db.invite.findFirst({
+//       where: {
+//         email: session.user.email,
+//         role: "DEVELOPER",
+//         status: "ACCEPTED",
+//         projectId,
+//       },
+//       select: {
+//         id: true,
+//       },
+//     });
+
+//     if (!projectMember && !acceptedInvite) {
+//       redirect("/auth/redirect");
+//     }
+//   }
+
+//   const project = await db.project.findFirst({
+//     where: isAdmin
+//       ? {
+//           id: projectId,
+//           workspaceId: membership.workspaceId,
+//         }
+//       : {
+//           id: projectId,
+//         },
+//     include: {
+//       gitHubRepo: true,
+//     },
+//   });
+
+//   if (!project) {
+//     redirect("/auth/redirect");
+//   }
+
+//   const logs = await db.auditLog.findMany({
+//     where: {
+//       workspaceId: project.workspaceId,
+//       action: "pm.prd.sent_to_development",
+//     },
+//     orderBy: {
+//       createdAt: "desc",
+//     },
+//     take: 200,
+//   });
+
+//   const reviewLogs = await db.auditLog.findMany({
+//     where: {
+//       workspaceId: project.workspaceId,
+//       action: "developer.pr.ai_reviewed",
+//     },
+//     orderBy: {
+//       createdAt: "desc",
+//     },
+//     take: 200,
+//   });
+
+//   const latestReviewByKey = new Map<string, LatestReview>();
+
+//   for (const log of reviewLogs) {
+//     const metadata = parseMetadata<LatestReview>(log.metadata);
+
+//     if (!metadata) continue;
+
+//     const key = reviewKey({
+//       projectId: metadata.projectId,
+//       requestId: metadata.requestId,
+//       prdId: metadata.prdId,
+//     });
+
+//     if (!latestReviewByKey.has(key)) {
+//       latestReviewByKey.set(key, metadata);
+//     }
+//   }
+
+//   const batches = logs
+//     .map((log) => {
+//       const metadata = parseMetadata<Omit<DevelopmentBatch, "id">>(
+//         log.metadata,
+//       );
+
+//       if (!metadata) return null;
+
+//       if (
+//         !metadata.prdId ||
+//         !metadata.projectId ||
+//         !metadata.requestId ||
+//         !Array.isArray(metadata.tasks)
+//       ) {
+//         return null;
+//       }
+
+//       if (metadata.projectId !== projectId) {
+//         return null;
+//       }
+
+//       const key = reviewKey({
+//         projectId: metadata.projectId,
+//         requestId: metadata.requestId,
+//         prdId: metadata.prdId,
+//       });
+
+//       return {
+//         id: log.id,
+//         prdId: metadata.prdId,
+//         requestId: metadata.requestId,
+//         projectId: metadata.projectId,
+//         projectName: metadata.projectName || project.name,
+//         repository:
+//           metadata.repository || project.gitHubRepo?.repoFullName || "",
+//         title: metadata.title || "Development task",
+//         finalContent: metadata.finalContent || "",
+//         status: metadata.status || "SENT_TO_DEVELOPMENT",
+//         tasks: metadata.tasks,
+//         createdAt:
+//           safeString(metadata.createdAt) || log.createdAt.toISOString(),
+//         latestReview: latestReviewByKey.get(key) || null,
+//       } satisfies DevelopmentBatch;
+//     })
+//     .filter((batch): batch is DevelopmentBatch => Boolean(batch));
+
+//   return (
+//     <DeveloperReviewClient
+//       project={{
+//         id: project.id,
+//         name: project.name,
+//         repository: project.gitHubRepo?.repoFullName ?? "",
+//       }}
+//       sessionUser={{
+//         name: session.user.name ?? "",
+//         email: session.user.email,
+//       }}
+//       initialBatches={batches}
+//     />
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { auth } from "@/lib/auth";
 import { db } from "@shipflow/db";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import DeveloperReviewClient from "./dev-review-client";
 
 export const dynamic = "force-dynamic";
 
@@ -15,13 +444,49 @@ type DevelopmentTask = {
   id: string;
   title: string;
   ownerRole: string;
-  area: string;
-  reason: string;
-  acceptanceCriteria: string[];
+  summary?: string;
+  workItems?: string[];
+  affectedFiles?: string[];
+  area?: string;
+  reason?: string;
+  acceptanceCriteria?: string[];
   status: string;
 };
 
+type ReviewIssue = {
+  severity: "BLOCKING" | "NON_BLOCKING";
+  file?: string;
+  issue: string;
+  recommendation: string;
+};
+
+type LatestReview = {
+  projectId?: string;
+  requestId?: string;
+  prdId?: string;
+  repository?: string;
+  pullNumber?: number;
+  pullRequestUrl?: string;
+  pullRequestTitle?: string;
+  pullRequestState?: string;
+  changedFiles?: {
+    filename: string;
+    status: string;
+    additions: number;
+    deletions: number;
+    changes: number;
+  }[];
+  review?: {
+    status: "FIX_REQUIRED" | "AI_APPROVED";
+    summary: string;
+    issues: ReviewIssue[];
+  };
+  status?: "FIX_REQUIRED" | "READY_FOR_HUMAN_REVIEW";
+  createdAt?: string;
+};
+
 type DevelopmentBatch = {
+  id: string;
   prdId: string;
   requestId: string;
   projectId: string;
@@ -32,23 +497,56 @@ type DevelopmentBatch = {
   status: string;
   tasks: DevelopmentTask[];
   createdAt: string;
+  latestReview: LatestReview | null;
 };
 
-function parseMetadata(metadata: unknown): DevelopmentBatch | null {
+type SentToDevelopmentMetadata = {
+  prdId?: string;
+  requestId?: string;
+  projectId?: string;
+  projectName?: string;
+  repository?: string;
+  title?: string;
+  finalContent?: string;
+  status?: string;
+  tasks?: DevelopmentTask[];
+  createdAt?: string;
+};
+
+function safeString(value: unknown) {
+  if (typeof value !== "string") return "";
+  return value.trim();
+}
+
+function parseMetadata<T>(metadata: unknown): T | null {
   try {
+    if (!metadata) return null;
+
     const parsed =
       typeof metadata === "string"
         ? JSON.parse(metadata)
-        : JSON.parse(JSON.stringify(metadata ?? {}));
+        : JSON.parse(JSON.stringify(metadata));
 
-    if (!parsed?.prdId || !parsed?.projectId || !Array.isArray(parsed?.tasks)) {
+    if (!parsed || typeof parsed !== "object") {
       return null;
     }
 
-    return parsed as DevelopmentBatch;
+    return parsed as T;
   } catch {
     return null;
   }
+}
+
+function reviewKey({
+  projectId,
+  requestId,
+  prdId,
+}: {
+  projectId?: string;
+  requestId?: string;
+  prdId?: string;
+}) {
+  return `${projectId || ""}:${requestId || ""}:${prdId || ""}`;
 }
 
 export default async function DeveloperPage({ searchParams }: PageProps) {
@@ -84,11 +582,30 @@ export default async function DeveloperPage({ searchParams }: PageProps) {
   }
 
   if (isDeveloper && !projectId) {
+    const projectMember = await db.clientProjectMember.findFirst({
+      where: {
+        userId: session.user.id,
+        role: "DEVELOPER",
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+      select: {
+        projectId: true,
+      },
+    });
+
+    if (projectMember?.projectId) {
+      projectId = projectMember.projectId;
+    }
+  }
+
+  if (isDeveloper && !projectId) {
     const acceptedInvite = await db.invite.findFirst({
       where: {
         email: session.user.email,
-        role: "DEVELOPER" as any,
-        status: "ACCEPTED" as any,
+        role: "DEVELOPER",
+        status: "ACCEPTED",
         projectId: {
           not: null,
         },
@@ -101,7 +618,49 @@ export default async function DeveloperPage({ searchParams }: PageProps) {
       },
     });
 
-    projectId = acceptedInvite?.projectId ?? "";
+    if (acceptedInvite?.projectId) {
+      projectId = acceptedInvite.projectId;
+    }
+  }
+
+  if (!projectId) {
+    const sentTaskLogs = await db.auditLog.findMany({
+      where: {
+        workspaceId: membership.workspaceId,
+        action: "pm.prd.sent_to_development",
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 50,
+    });
+
+    for (const log of sentTaskLogs) {
+      const metadata = parseMetadata<SentToDevelopmentMetadata>(log.metadata);
+
+      if (metadata?.projectId && Array.isArray(metadata.tasks)) {
+        projectId = metadata.projectId;
+        break;
+      }
+    }
+  }
+
+  if (isAdmin && !projectId) {
+    const firstProject = await db.project.findFirst({
+      where: {
+        workspaceId: membership.workspaceId,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (firstProject?.id) {
+      projectId = firstProject.id;
+    }
   }
 
   if (!projectId) {
@@ -123,11 +682,22 @@ export default async function DeveloperPage({ searchParams }: PageProps) {
   }
 
   if (isDeveloper) {
+    const projectMember = await db.clientProjectMember.findFirst({
+      where: {
+        userId: session.user.id,
+        projectId,
+        role: "DEVELOPER",
+      },
+      select: {
+        id: true,
+      },
+    });
+
     const acceptedInvite = await db.invite.findFirst({
       where: {
         email: session.user.email,
-        role: "DEVELOPER" as any,
-        status: "ACCEPTED" as any,
+        role: "DEVELOPER",
+        status: "ACCEPTED",
         projectId,
       },
       select: {
@@ -135,7 +705,27 @@ export default async function DeveloperPage({ searchParams }: PageProps) {
       },
     });
 
-    if (!acceptedInvite) {
+    const sentTaskLogForProject = await db.auditLog.findFirst({
+      where: {
+        workspaceId: membership.workspaceId,
+        action: "pm.prd.sent_to_development",
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    let hasTaskAccess = false;
+
+    if (sentTaskLogForProject?.metadata) {
+      const metadata = parseMetadata<SentToDevelopmentMetadata>(
+        sentTaskLogForProject.metadata,
+      );
+
+      hasTaskAccess = metadata?.projectId === projectId;
+    }
+
+    if (!projectMember && !acceptedInvite && !hasTaskAccess) {
       redirect("/auth/redirect");
     }
   }
@@ -169,146 +759,96 @@ export default async function DeveloperPage({ searchParams }: PageProps) {
     take: 200,
   });
 
-  const batches = logs
-    .map((log) => parseMetadata(log.metadata))
-    .filter(
-      (batch): batch is DevelopmentBatch =>
-        Boolean(batch && batch.projectId === projectId),
-    );
+  const reviewLogs = await db.auditLog.findMany({
+    where: {
+      workspaceId: project.workspaceId,
+      action: "developer.pr.ai_reviewed",
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    take: 200,
+  });
 
-  return (
-    <main className="min-h-screen bg-[#111111] text-white">
-      <div className="grid min-h-screen lg:grid-cols-[20%_80%]">
-        <aside className="border-r border-white/10 bg-[#0f0f0f] px-6 py-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
-            Loom
-          </p>
+  const latestReviewByKey = new Map<string, LatestReview>();
 
-          <h2 className="mt-10 text-2xl font-semibold">Developer Portal</h2>
+  for (const log of reviewLogs) {
+    const metadata = parseMetadata<LatestReview>(log.metadata);
 
-          <div className="mt-8 rounded-2xl border border-[#aa4825]/40 bg-[#aa4825]/10 p-5">
-            <p className="text-base font-semibold text-[#ff8a50]">
-              {project.name}
-            </p>
+    if (!metadata) continue;
 
-            <p className="mt-3 text-sm text-white/45">
-              {project.gitHubRepo?.repoFullName ?? "Repository not connected"}
-            </p>
-          </div>
+    const key = reviewKey({
+      projectId: metadata.projectId,
+      requestId: metadata.requestId,
+      prdId: metadata.prdId,
+    });
 
-          <nav className="mt-10">
-            <button className="w-full rounded-xl bg-white/10 px-5 py-4 text-left text-sm font-semibold text-white">
-              Assigned Tasks
-            </button>
-          </nav>
-        </aside>
+    if (!latestReviewByKey.has(key)) {
+      latestReviewByKey.set(key, metadata);
+    }
+  }
 
-        <section className="px-10 py-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
-            Assigned development work
-          </p>
+  const batches: DevelopmentBatch[] = logs.reduce<DevelopmentBatch[]>(
+    (acc, log) => {
+      const metadata = parseMetadata<SentToDevelopmentMetadata>(log.metadata);
 
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight">
-            Developer tasks
-          </h1>
+      if (!metadata) {
+        return acc;
+      }
 
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-white/45">
-            These tasks were created from PM-approved PRDs for this project.
-          </p>
+      if (
+        !metadata.prdId ||
+        !metadata.projectId ||
+        !metadata.requestId ||
+        !Array.isArray(metadata.tasks)
+      ) {
+        return acc;
+      }
 
-          <div className="mt-10 space-y-6">
-            {batches.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.02] p-8 text-sm text-white/45">
-                No development tasks have been assigned yet.
-              </div>
-            ) : (
-              batches.map((batch) => (
-                <section
-                  key={batch.prdId}
-                  className="rounded-3xl border border-white/10 bg-white/[0.02] p-7"
-                >
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
-                        PM-approved PRD
-                      </p>
+      if (metadata.projectId !== projectId) {
+        return acc;
+      }
 
-                      <h2 className="mt-4 text-3xl font-semibold text-white">
-                        {batch.title}
-                      </h2>
+      const key = reviewKey({
+        projectId: metadata.projectId,
+        requestId: metadata.requestId,
+        prdId: metadata.prdId,
+      });
 
-                      <p className="mt-2 text-sm text-white/35">
-                        Status: {batch.status}
-                      </p>
-                    </div>
+      const batch: DevelopmentBatch = {
+        id: log.id,
+        prdId: metadata.prdId,
+        requestId: metadata.requestId,
+        projectId: metadata.projectId,
+        projectName: metadata.projectName || project.name,
+        repository: metadata.repository || project.gitHubRepo?.repoFullName || "",
+        title: metadata.title || "Development task",
+        finalContent: metadata.finalContent || "",
+        status: metadata.status || "SENT_TO_DEVELOPMENT",
+        tasks: metadata.tasks,
+        createdAt: safeString(metadata.createdAt) || log.createdAt.toISOString(),
+        latestReview: latestReviewByKey.get(key) ?? null,
+      };
 
-                    <Badge label={`${batch.tasks.length} tasks`} />
-                  </div>
+      acc.push(batch);
 
-                  <div className="mt-7 space-y-4">
-                    {batch.tasks.map((task) => (
-                      <article
-                        key={task.id}
-                        className="rounded-2xl border border-white/10 bg-[#101010] p-5"
-                      >
-                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                          <div>
-                            <h3 className="text-xl font-semibold text-white">
-                              {task.title}
-                            </h3>
-
-                            <p className="mt-2 text-sm text-[#ff9c73]">
-                              Assigned to: {task.ownerRole}
-                            </p>
-                          </div>
-
-                          <Badge label={task.status} />
-                        </div>
-
-                        <div className="mt-5 grid gap-4 md:grid-cols-[180px_1fr]">
-                          <p className="text-sm font-semibold text-white/75">
-                            Area
-                          </p>
-
-                          <p className="text-sm leading-7 text-white/50">
-                            {task.area}
-                          </p>
-
-                          <p className="text-sm font-semibold text-white/75">
-                            Reason
-                          </p>
-
-                          <p className="text-sm leading-7 text-white/50">
-                            {task.reason}
-                          </p>
-
-                          <p className="text-sm font-semibold text-white/75">
-                            Acceptance criteria
-                          </p>
-
-                          <ul className="space-y-2 text-sm leading-7 text-white/50">
-                            {task.acceptanceCriteria.map((item) => (
-                              <li key={item}>• {item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </section>
-              ))
-            )}
-          </div>
-        </section>
-      </div>
-    </main>
+      return acc;
+    },
+    [],
   );
-}
 
-function Badge({ label }: { label: string }) {
   return (
-    <span className="rounded-full border border-[#aa4825]/40 bg-[#aa4825]/10 px-3 py-1 text-xs text-[#ff8a50]">
-      {label}
-    </span>
+    <DeveloperReviewClient
+      project={{
+        id: project.id,
+        name: project.name,
+        repository: project.gitHubRepo?.repoFullName ?? "",
+      }}
+      sessionUser={{
+        name: session.user.name ?? "",
+        email: session.user.email,
+      }}
+      initialBatches={batches}
+    />
   );
 }

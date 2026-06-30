@@ -22,14 +22,16 @@ type DevelopmentTask = {
   status: "READY_FOR_DEVELOPER";
 };
 
+type AiGeneratedTask = {
+  title?: string;
+  ownerRole?: string;
+  summary?: string;
+  workItems?: string[];
+  affectedFiles?: string[];
+};
+
 type AiTaskResponse = {
-  tasks?: Array<{
-    title?: string;
-    ownerRole?: string;
-    summary?: string;
-    workItems?: string[];
-    affectedFiles?: string[];
-  }>;
+  tasks?: AiGeneratedTask[];
 };
 
 function sanitizeText(value: string) {
@@ -443,7 +445,7 @@ function normalizeAiTasks({
   tasks,
   title,
 }: {
-  tasks: Array<AiTaskResponse["tasks"][number]>;
+  tasks: AiGeneratedTask[];
   title: string;
 }) {
   const normalizedTasks = tasks
