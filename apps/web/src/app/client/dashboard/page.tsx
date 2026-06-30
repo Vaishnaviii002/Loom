@@ -362,7 +362,7 @@ export default async function ClientDashboardPage({
 
   if (projectAccesses.length === 0) {
     return (
-      <main className="min-h-screen bg-[#111111] px-8 py-10 text-white">
+      <main className="h-screen overflow-hidden bg-[#111111] text-white">
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
           Loom Client Portal
         </p>

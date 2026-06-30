@@ -553,3 +553,41 @@ model AuditLog {
   @@index([actorId])
   @@index([entityType, entityId])
 }
+
+model WorkspaceBilling {
+  id                 String   @id @default(cuid())
+  workspaceId        String   @unique
+  plan               String   @default("FREE")
+  status             String   @default("ACTIVE")
+  razorpayCustomerId String?
+  razorpayPaymentId  String?
+  razorpayOrderId    String?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  aiReviewCredits    Int      @default(10)
+  aiReviewUsed       Int      @default(0)
+  repositoryLimit    Int      @default(1)
+  repositoryUsed     Int      @default(0)
+  projectLimit       Int      @default(1)
+  projectUsed        Int      @default(0)
+  prdLimit           Int      @default(1)
+  prdUsed            Int      @default(0)
+  premiumWorkflow    Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model BillingPayment {
+  id                String   @id @default(cuid())
+  workspaceId       String
+  userId            String
+  plan              String
+  amount            Int
+  currency          String
+  status            String   @default("PENDING")
+  razorpayOrderId   String   @unique
+  razorpayPaymentId String?
+  razorpaySignature String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}

@@ -17,6 +17,7 @@
   "devDependencies": {
     "@types/node": "^20.19.43",
     "prettier": "latest",
+    "prisma": "6.19.0",
     "turbo": "latest",
     "typescript": "latest"
   },

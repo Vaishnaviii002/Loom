@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import AdminDashboardClient from "./admin-dashboard-client";
 
+
 export default async function AdminPage() {
   const session = await auth.api.getSession({
     headers: await headers(),
