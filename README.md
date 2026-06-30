@@ -14,24 +14,34 @@ This project uses the same idea for software delivery. In real product teams, wo
 
 Core Workflow
 Client Request
+
    ↓
 AI Discovery
+
    ↓
 Client-facing PRD
+
    ↓
 Product Manager Review
+
    ↓
 Final PRD
+
    ↓
 AI Development Task Planning
+
    ↓
 Developer Implementation
+
    ↓
 GitHub Pull Request
+
    ↓
 AI Code Review
+
    ↓
 Fix Required / AI Approved
+
    ↓
 Senior Engineer Human Approval
 
