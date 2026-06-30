@@ -1,362 +1,856 @@
-Loom
+# Loom
 
-Loom is an AI-powered product delivery platform that helps software teams move from a raw client request to a production-ready feature through a structured workflow:
+**Loom** is an AI-powered product delivery platform for software teams. It manages the full journey from a raw client request to a production-ready feature through AI-assisted product thinking, PRD generation, developer task planning, GitHub pull request review, fix loops, and final human approval.
 
-Request → AI Discovery → PRD → PM Review → Development Tasks → GitHub Pull Request → AI Code Review → Fix Loop → Human Approval → Shipped
+---
 
+<br />
 
-Why the name “Loom”?
+## Why the name “Loom”?
 
 A loom is a tool used to weave threads together into a complete fabric.
 
 This project uses the same idea for software delivery. In real product teams, work is usually scattered across client messages, support requests, product notes, PRDs, developer tasks, GitHub pull requests, code reviews, and approvals. Loom brings all of those separate threads together and weaves them into one clear delivery workflow.
 
+---
 
-Core Workflow
+<br />
 
+# Project Overview
+
+Loom is a production-grade enterprise SaaS platform built for existing software teams.
+
+It is not just a task manager, a PRD generator, or an AI chatbot. Loom manages the complete lifecycle of software delivery.
+
+It helps teams handle:
+
+* feature requests
+* change requests
+* bug reports
+* UI improvements
+* backend updates
+* optimization work
+* GitHub pull request reviews
+* developer fix loops
+* senior engineer approvals
+
+The main problem Loom solves is that software requests often arrive in an unclear and unstructured way. Clients may ask for something without enough context, Product Managers may need to rewrite requirements, developers may receive vague tasks, and reviewers may not know whether the final implementation actually satisfies the original request.
+
+Loom solves this by using AI across the workflow while keeping humans in control of final decisions.
+
+---
+
+<br />
+
+
+# Core Workflow
+
+```txt
 Client Request
-
-   ↓
-   
+        ↓
 AI Discovery
-
-   ↓
-   
+        ↓
 Client-facing PRD
-
-   ↓
-   
+        ↓
 Product Manager Review
-
-   ↓
-   
+        ↓
 Final PRD
-
-   ↓
-   
+        ↓
 AI Development Task Planning
-
-   ↓
-   
+        ↓
 Developer Implementation
-
-   ↓
-   
+        ↓
 GitHub Pull Request
-
-   ↓
-   
+        ↓
 AI Code Review
-
-   ↓
-   
+        ↓
 Fix Required / AI Approved
-
-   ↓
-   
+        ↓
 Senior Engineer Human Approval
+        ↓
+Shipped
+```
+
+---
+
+<br />
+
+# Role-Based Portals
+
+Loom has separate portals for each role. Every role has a focused responsibility in the product delivery lifecycle.
+
+---
+
+<br />
+
+## 1. Admin Portal
+
+The Admin manages the workspace, projects, repositories, members, roles, and billing.
+
+### Admin can:
+
+* create projects
+* connect GitHub repositories
+* invite users by link
+* assign user roles
+* assign users to specific projects
+* view project members
+* preview role-specific portals
+* manage workspace settings
+* view billing section
 
 
 
-Main Roles
+<br />
 
-Loom has separate portals for each role.
+## 2. Client Portal
 
-1. Admin
+The Client creates product requests in simple language.
 
-The Admin manages the workspace, projects, members, repositories, and billing. Admin can not make any changes only verify them.
+The Client does not need to write a perfect PRD. Loom AI helps understand the request, checks missing details, and turns it into a structured requirement.
 
-The Admin can:
+### Client can:
 
--create projects
--connect GitHub repositories
--invite members by link
--assign roles
--assign users to specific projects
--view project members
--open role-specific portals as admin preview
--manage workspace settings
--view billing section
+* select request type
+* describe the change they need
+* run AI Discovery
+* review AI-generated analysis
+* submit request
+* add additional information
+* generate PRD
+* send PRD to Product Manager
 
+### Supported request types:
 
-2. Client
-
-The Client raises product requests in simple language.
-
-The Client can:
-
--select request type
--describe the change they need
--generate an AI-analyzed request
--review AI Discovery output
--submit the request
--add additional information later
--view request details
--generate client-facing PRD
--send PRD to Product Manager
-
-Supported request types include:
-
--Feature
--Bug
--Change / Update
--Improvement
--New Product
--Example Client Request
--Request type: Change / update
-
-Request:
-Update the logo on the landing page.
+* Feature request
+* Change request
+* Bug request
+* Improvement request
+* New product request
 
 
 
-3. Product Manager
+### AI Discovery Example
 
-The Product Manager reviews client-generated PRDs and turns them into implementation-ready requirements.
+```txt
+This is a UI/branding change.
 
-The PM can:
+Likely affected area:
+Landing page, header, or branding component.
 
--view PRDs sent by clients
--open a specific PRD
--review AI-generated PRD content
--edit PRD details
--add missing product decisions
--save changes permanently
--finalize the PRD
--send the finalized PRD to AI for task planning
--review AI-generated developer responsibilities
--send approved task cards to the developer portal
 
-The PM does not send the full PRD directly to developers.
+<br />
 
-Instead:
+## 3. Product Manager Portal
+
+The Product Manager reviews client-generated PRDs and prepares them for engineering.
+The PM is responsible for finalizing the requirement before it reaches the developer.
+
+### Product Manager can:
+
+* view PRDs sent by clients
+* open a specific PRD
+* review AI-generated PRD content
+* edit PRD details
+* add missing product decisions
+* save changes permanently
+* finalize the PRD
+* send finalized PRD to AI task planning
+* review AI-generated developer responsibilities
+* send approved task cards to developer portal
 
 Final PRD
-   ↓
-AI analyzes PRD
-   ↓
-AI creates role-specific development tasks
-   ↓
-PM reviews tasks
-   ↓
-PM sends tasks to developers
-   ↓
-Shipped
+        ↓
+AI analyzes finalized PRD
+        ↓
+AI creates role-specific development task cards
+        ↓
+PM reviews generated task cards
+        ↓
+PM sends tasks to Developer Portal
+```
+
+
+AI task planning output:
+
+```txt
+Task for: UI Designer
+
+Prepare logo update for landing page
+
+Work items:
+- Review current logo usage.
+- Prepare updated logo direction according to the PRD.
+- Make sure the logo fits the dark theme.
+- Define correct size, spacing, placement, and responsive behavior.
+```
 
 
 
+<br />
 
+## 4. Developer Portal
 
-4. Developer
+The Developer receives PM-approved AI-generated task cards.
 
-The Developer receives task cards created from PM-approved PRDs.
+The Developer implements the task inside the connected GitHub repository and creates a real pull request.
 
-The Developer can:
+### Developer can:
 
--view assigned tasks for their project
--understand what needs to be implemented
--see task summary and work items
--see likely affected files if AI provides them
--implement changes in the connected GitHub repository
--create or link a real GitHub pull request
--run AI review against the pull request
--see AI review results
--fix bugs if AI marks the PR as Fix Required
--rerun review after fixes
--move work forward when AI approves
--Example Developer Task
--Task for: Frontend Developer
+* view assigned tasks
+* read task summary
+* understand work items
+* see likely affected files
+* implement the task in GitHub
+* create or link a real GitHub pull request
+* run AI review against the PR
+* see AI review results
+* fix blocking issues
+* rerun AI review after fixes
+* move work forward when AI approves
 
-Implement logo update in landing page
+After implementation, the Developer links a real GitHub pull request.
 
+Example:
 
+```txt
+https://github.com/owner/repo/pull/12
+```
 
+Then Loom fetches the real PR data and runs AI review.
 
-5. Senior Engineer / Human Reviewer
+---
+
+<br />
+
+## 5. Senior Engineer / Human Reviewer Portal
 
 The Senior Engineer is the final human approver.
+AI can assist, but final approval remains with a human technical reviewer.
 
-The Senior Engineer can:
+### Senior Engineer can:
 
--review AI-approved pull requests
--verify the implementation against the final PRD
--check AI review results
--inspect blocking and non-blocking issues
--approve the work
--reject the implementation
--request changes
--mark the feature complete
-
-This ensures AI supports the workflow, but humans remain the final decision makers.
-
-
+* review AI-approved pull requests
+* compare implementation with final PRD
+* inspect AI review results
+* check changed files
+* verify blocking issues are resolved
+* approve implementation
+* reject implementation
+* request more changes
+* mark the feature complete
 
 
 
+<br />
+
+# Tech Stack
+
+## Frontend
+
+* Next.js App Router
+* TypeScript
+* Tailwind CSS
+* Shadcn-style UI
+* Dark SaaS interface
+* Orange accent color: `#aa4825`
+
+## Backend
+
+* Next.js API routes
+* tRPC monorepo structure
+* BetterAuth
+* Prisma ORM
+* PostgreSQL / Neon
+* Audit log based workflow tracking
+
+## AI
+
+* OpenAI API
+* AI request analysis
+* AI PRD generation
+* AI task planning
+* AI GitHub PR review
+
+## GitHub
+
+* Octokit
+* GitHub repository connection
+* Pull request fetching
+* Changed file fetching
+* Diff analysis
+* GitHub webhook support
+* AI review comments on PRs
+
+## Async Workflow
+
+* Inngest planned for background jobs
+* GitHub webhook processing
+* AI review queue
+* re-review loop
+* notification workflows
+
+## Billing
+
+* Razorpay planned
+
+## Deployment
+
+* Vercel planned
+
+---
+
+<br />
+
+# Architecture
+
+```txt
+apps/
+  web/
+    src/
+      app/
+        admin/
+        client/
+        pm/
+        dev/
+        review/
+        api/
+          client/
+          pm/
+          developer/
+          github/
+          invites/
+      components/
+      lib/
+
+packages/
+  db/
+  trpc/
+  ai/
+  github/
+  inngest/
+```
+
+---
+
+<br />
+
+## Application Layers
+
+```mermaid
+flowchart TD
+    UI[Role-Based UI Layer] --> API[Next.js API Layer]
+    API --> AUTH[BetterAuth Authentication]
+    API --> DB[Prisma + PostgreSQL]
+    API --> AI[OpenAI AI Layer]
+    API --> GH[GitHub Layer using Octokit]
+    GH --> WEBHOOK[GitHub Webhooks]
+    API --> INNGEST[Inngest Background Workflows]
+```
+
+---
+
+<br />
+
+## UI Layer
+
+Role-based portals:
+
+```txt
+/admin
+/client/dashboard
+/pm
+/dev
+/review
+```
+
+Each role has its own focused workflow and project-restricted access.
+
+---
+
+<br />
+
+## API Layer
+
+Main API route groups:
+
+```txt
+/api/client/*
+/api/pm/*
+/api/developer/*
+/api/github/*
+/api/invites/*
+```
+
+These routes handle:
+
+* request creation
+* PRD saving
+* PRD finalization
+* AI task generation
+* sending tasks to developers
+* GitHub PR review
+* GitHub webhook logging
+* invite acceptance
+
+---
+
+<br />
+
+## Database Layer
+
+Prisma and PostgreSQL store:
+
+* users
+* workspaces
+* memberships
+* projects
+* GitHub repositories
+* invites
+* client project access
+* feature requests
+* PRD states
+* development task batches
+* GitHub PR review results
+* audit events
+
+---
+
+<br />
+
+## AI Layer
+
+AI is used for:
+
+* request clarification
+* duplicate or existing feature detection
+* PRD generation
+* PM task planning
+* developer role assignment
+* real GitHub PR review
+
+---
+
+<br />
+
+## GitHub Layer
+
+GitHub integration uses Octokit to:
+
+* connect repositories
+* verify repository ownership
+* fetch pull requests
+* fetch changed files
+* fetch patches/diffs
+* post AI review comments
+* track review status
+
+---
+
+<br />
+
+# Setup Instructions
+
+## 1. Clone the repository
+
+```bash
+git clone <your-repository-url>
+cd shipflow
+```
+
+
+---
+
+##  Setup environment variables
+
+Create a `.env` or `.env.local` file.
+
+```env
+DATABASE_URL=
+DIRECT_URL=
+
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL=http://localhost:3000
+
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
+
+GITHUB_TOKEN=
+GITHUB_WEBHOOK_SECRET=
+
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+```
+
+---
+
+##  Setup database
+
+Generate Prisma client:
+
+```bash
+pnpm prisma generate
+```
+
+Run migrations:
+
+```bash
+pnpm prisma migrate dev
+```
+
+Or push schema during development:
+
+```bash
+pnpm prisma db push
+```
+
+---
+
+## 5. Start development server
+
+```bash
+pnpm dev
+```
+
+Open:
+
+```txt
+http://localhost:3000
+```
+
+---
+
+<br />
+
+# Environment Variables
+
+## Database
+
+```env
+DATABASE_URL=
+DIRECT_URL=
+```
+
+Used by Prisma to connect to PostgreSQL / Neon.
+
+---
+
+## BetterAuth
+
+```env
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL=
+```
+
+Used for authentication, sessions, sign-in, invite login, and role-based redirects.
+
+---
+
+## App URL
+
+```env
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+Used for redirects, invite links, and public app references.
+
+---
+
+## OpenAI
+
+```env
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
+```
+
+Used for:
+
+* request analysis
+* PRD generation
+* task generation
+* GitHub PR review
+
+---
+
+## GitHub
+
+```env
+GITHUB_TOKEN=
+GITHUB_WEBHOOK_SECRET=
+```
+
+`GITHUB_TOKEN` is used by Octokit to fetch pull requests, changed files, patches, and post comments.
+
+`GITHUB_WEBHOOK_SECRET` is a random secret created by the developer.
+
+Generate one:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Use the same value in:
+
+```txt
+.env file
+GitHub repository webhook settings
+```
+
+---
+
+## Razorpay
+
+```env
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+```
+
+Used later for paid plans, billing, AI credits, and usage limits.
+
+---
+
+<br />
+
+# Database Schema Notes
+
+The database is managed using Prisma.
+
+---
+
+## User
+
+Stores application users.
+
+Important fields:
+
+```txt
+id
+name
+email
+createdAt
+```
+
+Users get role-based access through memberships and project access records.
+
+---
+
+## Workspace
+
+Represents an organization or team workspace.
+
+Important fields:
+
+```txt
+id
+name
+slug
+createdAt
+```
+
+---
+
+
+---
+
+
+Github - Example:
+
+```txt
+vaishnavi/skillhire
+```
+
+
+
+##  Pull Request Review Flow
+
+Developer enters a real GitHub PR URL:
+
+```txt
+https://github.com/owner/repo/pull/12
+```
+
+or:
+
+```txt
+owner/repo#12
+```
+
+Loom then:
+
+```txt
+1. Validates developer access
+2. Verifies PR repository matches connected project repository
+3. Fetches PR metadata using Octokit
+4. Fetches changed files and patches
+5. Loads PM-approved PRD and tasks
+6. Sends diff + PRD + tasks to AI
+7. Stores AI review result
+8. Posts review comment to GitHub
+9. Shows result in Developer Portal
+```
+
+---
 
 
 
 
+## Why Inngest is useful
 
-What AI Does in Loom
-
-AI is used across the full product delivery lifecycle.
-
-AI Discovery
-
-AI analyzes the client request and connected repository context.
-
-It checks:
-
-what the client is asking for
-whether the request is clear
-whether the feature may already exist
-whether more information is needed
-which product area may be affected
-likely files or modules
-change impact
-acceptance criteria
-follow-up questions
-
-Example:
-
-Client request:
-Add pictures to the landing page.
-
-AI may ask:
-
-- Which landing page section should contain the images?
-- How many images should be shown?
-- Should images be static assets or uploaded by admin?
-- Should the layout change on mobile?
-AI PRD Generation
-
-AI converts a valid client request into a structured PRD.
-
-A PRD may include:
-
-problem statement
-requested change
-change impact
-acceptance criteria
-edge cases
-success metrics
-additional client details
-AI PM Support
-
-AI helps the Product Manager by:
-
-turning unclear PRDs into cleaner requirements
-identifying missing details
-helping convert PRDs into implementation-ready scope
-creating developer responsibility cards
-assigning tasks to the correct role
-
-Example:
-
-Request:
-Client login fails after accepting invite.
-
-AI may create:
-
-Task for: Backend Developer
-
-Fix invite login flow
-
-- Review invite acceptance route.
-- Verify BetterAuth sign-in session creation.
-- Confirm client-project access is created.
-- Redirect client to the correct project dashboard.
-AI Developer Task Planning
-
-AI reads the finalized PRD and creates only the tasks that are actually needed.
-
-It should not assign every task to every role.
+AI and GitHub operations can be slow, retry-heavy, or event-driven.
 
 Examples:
 
-Logo update
-Task for: UI Designer
-Prepare updated logo direction and dark-theme visual rules.
-Landing page UI change
-Task for: Frontend Developer
-Implement image section on landing page and keep layout responsive.
-Login bug
-Task for: Backend Developer
-Fix auth/session/invite redirect flow.
-Slow dashboard
-Task for: Senior Developer
-Investigate performance bottleneck and optimize safely.
-AI GitHub Pull Request Review
+* AI request analysis
+* PRD generation
+* task generation
+* GitHub PR diff fetching
+* AI code review
+* webhook processing
+* re-review loop
+* notifications
+* human approval reminders
 
-Loom uses real GitHub pull request data.
+These should not always block the user interface.
 
-AI reviews:
+---
 
-actual changed files
-actual code diff
-final PRD
-assigned task details
-expected behavior
-acceptance criteria
 
-AI should not generate generic comments.
 
-It should only report issues visible in the real PR or clearly required by the PRD.
 
-AI review result can be:
 
+##  AI Follow-Up Questions
+
+If the request is unclear, AI asks follow-up questions.
+
+Example:
+
+```txt
+Request:
+Add images to homepage.
+```
+
+AI asks:
+
+```txt
+- Which homepage section should contain the images?
+- How many images should be added?
+- Should these images be static or dynamic?
+- Should the layout change on mobile?
+```
+
+---
+
+
+
+## AI Product Manager Support
+
+AI helps the PM by:
+
+* improving unclear PRDs
+* identifying missing details
+* converting product scope into engineering-ready work
+* creating developer responsibility cards
+* assigning tasks to the correct role
+
+---
+
+
+
+
+##  AI GitHub Pull Request Review
+
+AI reviews real GitHub PR changes.
+
+It receives:
+
+* final PRD
+* assigned task details
+* changed files
+* patches/diffs
+* PR metadata
+
+It returns:
+
+```txt
 FIX_REQUIRED
+```
 
-or
+or:
 
+```txt
 AI_APPROVED
+```
 
-If blocking bugs are found, the developer fixes the PR and runs review again.
+Example issue:
 
+```txt
+Issue:
+The PR updates the desktop layout but does not handle mobile responsiveness.
 
+Recommendation:
+Add responsive behavior for mobile screen sizes.
+```
 
+---
 
+## AI Fix Loop
 
+The developer can fix the PR and rerun AI review.
 
+```txt
+AI Review
+        ↓
+Fix Required
+        ↓
+Developer fixes code
+        ↓
+AI Review again
+        ↓
+AI Approved
+        ↓
+Human Review
+```
 
+---
 
-GitHub PR Review Flow
-Developer links GitHub PR
-   ↓
-Loom verifies PR belongs to connected repo
-   ↓
-Octokit fetches PR metadata
-   ↓
-Octokit fetches changed files and patches
-   ↓
-AI reviews diff against PRD and task
-   ↓
-AI posts review comment on GitHub
-   ↓
-Loom stores review status
-
-
-
-
-Tech Stack
-Next.js App Router
-TypeScript
-Tailwind CSS
-Shadcn-style UI
-BetterAuth
-Prisma 6.19.0
-PostgreSQL / Neon
-tRPC monorepo
-Octokit
-OpenAI
-Inngest planned
-Razorpay planned
-GitHub Webhooks
-Vercel deployment planned
+<br />
 
 
 
 
 
 
+
+
+
+# Current Project Status
+
+Completed or partially completed:
+
+* Admin project management
+* Role-based invite flow
+* Client request creation
+* Client AI Discovery
+* Client PRD generation
+* Client additional information
+* Client sends PRD to PM
+* PM project-restricted dashboard
+* PM PRD review
+* PM editable PRD
+* PM final PRD
+* AI task generation inside PM portal
+* Developer responsibility page
+* Task grouping by developer role
+* Send task to developer
+* Persist tasks after reload
+* Developer task display
+* GitHub PR review backend route planned/created
+* GitHub webhook route planned/created
+
+---
+
+# Author
+
+Built by **Vaishnavi Rajput**.
