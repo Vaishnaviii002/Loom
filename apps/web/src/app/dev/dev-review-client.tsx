@@ -1455,49 +1455,6 @@
 //   );
 // }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -1868,6 +1825,23 @@ export default function DeveloperReviewClient({
     setActiveView("ai-reviews");
   }
 
+  function openBatchAiReview(batch: DevelopmentBatch) {
+    if (batch.tasks.length === 0) return;
+
+    const expandedTaskId = expandedTaskByBatch[batch.id];
+
+    const taskIndex = expandedTaskId
+      ? batch.tasks.findIndex(
+          (task, index) => getTaskId(task, index) === expandedTaskId,
+        )
+      : 0;
+
+    const safeTaskIndex = taskIndex >= 0 ? taskIndex : 0;
+    const task = batch.tasks[safeTaskIndex];
+
+    openAiReview(batch, task, safeTaskIndex);
+  }
+
   async function runAiReview(
     batch: DevelopmentBatch,
     task: DevelopmentTask,
@@ -1929,7 +1903,8 @@ export default function DeveloperReviewClient({
     } catch (error) {
       setReviewErrors((prev) => ({
         ...prev,
-        [reviewKey]: error instanceof Error ? error.message : "AI review failed",
+        [reviewKey]:
+          error instanceof Error ? error.message : "AI review failed",
       }));
     } finally {
       setReviewLoading((prev) => ({
@@ -2006,14 +1981,9 @@ export default function DeveloperReviewClient({
                   <p className="text-lg font-semibold uppercase tracking-[0.22em] text-[#aa4825]">
                     Developer tasks
                   </p>
-
-                  
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <Badge label={`${fixRequiredCount} fix required`} />
-                  <Badge label={`${readyForHumanReviewCount} ready`} />
-                </div>
+               
               </div>
 
               <div className="mt-10 space-y-6">
@@ -2027,18 +1997,31 @@ export default function DeveloperReviewClient({
                       key={batch.id}
                       className="rounded-3xl border border-white/10 bg-white/[0.02] p-7"
                     >
-                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div>
-                         
+                      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                        <div className="min-w-0">
+                          
 
-                          <h2 className="mt-4 text-3xl font-semibold text-white">
-                            {batch.title}
-                          </h2>
+                          <div className="mt-4 flex items-center gap-4">
+                            <h2 className="text-3xl font-semibold text-white">
+                              {batch.title}
+                            </h2>
 
-                         
+                            
+                          </div>
+
+                          
+
+                          
                         </div>
 
-                        
+                        <button
+                          type="button"
+                          onClick={() => openBatchAiReview(batch)}
+                          disabled={batch.tasks.length === 0}
+                          className="mt-10 rounded-xl border border-[#aa4825]/40 bg-[#aa4825]/10 px-10 py-3 text-s font-semibold text-[#ff8a50] transition hover:bg-[#aa4825]/20 disabled:cursor-not-allowed disabled:opacity-40 md:mt-12"
+                        >
+                          AI Review
+                        </button>
                       </div>
 
                       <div className="mt-7">
@@ -2164,7 +2147,7 @@ export default function DeveloperReviewClient({
                                           )}
                                       </div>
 
-                                      <button
+                                      {/* <button
                                         type="button"
                                         onClick={() =>
                                           openAiReview(batch, task, taskIndex)
@@ -2172,7 +2155,7 @@ export default function DeveloperReviewClient({
                                         className="mt-5 w-full rounded-xl bg-[#aa4825] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#bd5630]"
                                       >
                                         AI Review
-                                      </button>
+                                      </button> */}
                                     </div>
                                   ) : null}
                                 </article>
@@ -2300,9 +2283,7 @@ function AiReviewPanel({
           Selected task
         </p>
 
-        <h2 className="mt-4 text-2xl font-semibold text-white">
-          {task.title}
-        </h2>
+        <h2 className="mt-4 text-2xl font-semibold text-white">{task.title}</h2>
 
         <p className="mt-2 text-sm text-[#ff9c73]">
           Assigned to: {formatOwnerRole(task.ownerRole)}
@@ -2557,8 +2538,7 @@ function FixRequiredPanel({
                   </p>
 
                   <p className="mt-3 text-sm leading-7 text-red-100/60">
-                    {visibleReview?.review.summary ||
-                      "Open AI review result"}
+                    {visibleReview?.review.summary || "Open AI review result"}
                   </p>
                 </div>
 
