@@ -4470,7 +4470,7 @@ function SeniorSummaryPanel({
   <button
     type="button"
     onClick={() => {
-      window.location.href = `/reviewer/dashboard?summaryId=${summary.summaryId}`;
+      window.location.href = `/review?summaryId=${summary.summaryId}`;
     }}
     className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-6 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/15"
   >

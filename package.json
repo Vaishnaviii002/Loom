@@ -14,11 +14,13 @@
     "db:migrate": "pnpm --filter @shipflow/db db:migrate",
     "db:studio": "pnpm --filter @shipflow/db db:studio"
   },
- 
   "devDependencies": {
     "@types/node": "^20.19.43",
     "prettier": "latest",
     "turbo": "latest",
     "typescript": "latest"
+  },
+  "dependencies": {
+    "@octokit/rest": "^22.0.1"
   }
 }
