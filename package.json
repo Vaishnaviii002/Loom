@@ -4,13 +4,14 @@
   "version": "0.1.0",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
+    "dev": "turbo run dev",
+    "build": "pnpm db:generate && turbo run build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,md,json,css}\"",
-    "db:generate": "pnpm --filter @shipflow/db db:generate",
-    "db:push": "pnpm --filter @shipflow/db db:push",
+    "db:generate": "prisma generate --schema packages/db/prisma/schema.prisma",
+    "db:push": "prisma db push --schema packages/db/prisma/schema.prisma",
+    "postinstall": "prisma generate --schema packages/db/prisma/schema.prisma",
     "db:migrate": "pnpm --filter @shipflow/db db:migrate",
     "db:studio": "pnpm --filter @shipflow/db db:studio"
   },
