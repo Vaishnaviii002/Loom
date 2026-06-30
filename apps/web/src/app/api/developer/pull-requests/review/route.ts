@@ -214,9 +214,22 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
 
-    const projectId = safeString(body.projectId);
-    const requestId = safeString(body.requestId);
-    const prInput = safeString(body.prInput);
+const projectId = safeString(body.projectId);
+const requestId = safeString(body.requestId);
+const taskId = safeString(body.taskId);
+const taskTitle = safeString(body.taskTitle);
+const prInput = safeString(body.prInput);
+
+const taskSummary = safeString(body.taskSummary);
+const taskArea = safeString(body.taskArea);
+const ownerRole = safeString(body.ownerRole);
+const workItems = Array.isArray(body.workItems) ? body.workItems : [];
+const acceptanceCriteria = Array.isArray(body.acceptanceCriteria)
+  ? body.acceptanceCriteria
+  : [];
+const affectedFiles = Array.isArray(body.affectedFiles)
+  ? body.affectedFiles
+  : [];
 
     if (!projectId) {
       return jsonError("projectId is required");
